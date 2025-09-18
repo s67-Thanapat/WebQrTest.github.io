@@ -1,71 +1,35 @@
 <!DOCTYPE html>
-<html lang="th" translate="no">
+<html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin Login</title>
-  <style>
-    :root{--bg:#0b0c10;--fg:#e5e7eb;--card:#111318;--border:rgba(255,255,255,.1);--accent:#2563eb}
-    body{margin:0;height:100dvh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,Segoe UI,Roboto}
-    .card{width:min(440px,92vw);background:var(--card);border:1px solid var(--border);padding:18px;border-radius:14px}
-    h1{margin:0 0 10px}
-    label{display:block;font-size:12px;opacity:.8;margin:8px 0 4px}
-    input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg)}
-    button{width:100%;margin-top:12px;padding:10px;border:none;border-radius:10px;background:var(--accent);color:#fff;cursor:pointer}
-    .muted{opacity:.8;margin-top:8px;min-height:1lh}
-  </style>
+  <meta charset="utf-8">
+  <title>Login</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <form class="card" id="f">
-    <h1>เข้าสู่ระบบแอดมิน</h1>
-    <label>Email</label><input id="email" type="email" required autocomplete="username" />
-    <label>Password</label><input id="pw" type="password" required autocomplete="current-password" />
-    <button type="submit">🔐 Login</button>
-    <div id="msg" class="muted"></div>
+  <h1>เข้าสู่ระบบแอดมิน</h1>
+  <form id="loginForm">
+    <input id="email" type="email" placeholder="Email" required>
+    <input id="password" type="password" placeholder="Password" required>
+    <button type="submit">Login</button>
+    <div id="msg"></div>
   </form>
 
 <script>
-const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co"; // <- ของคุณ
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";                   // <- ของคุณ
-const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app";  // <- ของคุณ
+const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
 
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{persistSession:true} });
-const f = document.getElementById("f");
-const email = document.getElementById("email");
-const pw = document.getElementById("pw");
-const msg = document.getElementById("msg");
-
-// ถ้ามี session อยู่แล้ว เช็ค role แล้วพาเข้าหน้าแอดมิน
-(async () => {
-  const { data:{ session } } = await sb.auth.getSession();
-  if (!session) return;
-  if (await isAdmin(session.access_token)) location.href = "./app.html";
-})();
-
-f.addEventListener("submit", async (e)=>{
-  e.preventDefault();
-  msg.textContent = "กำลังเข้าสู่ระบบ...";
-  const { data, error } = await sb.auth.signInWithPassword({ email: email.value.trim(), password: pw.value });
-  if (error) { msg.textContent = "❌ " + error.message; return; }
-
-  const ok = await isAdmin(data.session.access_token);
-  if (ok) {
-    msg.textContent = "✅ สำเร็จ กำลังเข้า...";
-    location.href = "./app.html";
-  } else {
-    msg.textContent = "❌ ไม่ใช่แอดมิน";
-    await sb.auth.signOut();
-  }
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
-async function isAdmin(token){
-  try{
-    const r = await fetch(`${BACKEND_BASE}/admin/me`, { headers: { Authorization: "Bearer "+token }});
-    const j = await r.json();
-    return r.ok && j?.is_admin === true;
-  }catch{ return false; }
-}
+document.getElementById("loginForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const email=document.getElementById("email").value.trim();
+  const pw=document.getElementById("password").value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+  if(error) document.getElementById("msg").textContent="❌ "+error.message;
+  else window.location.href="admin.html";
+});
 </script>
 </body>
 </html>
