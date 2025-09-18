@@ -21,7 +21,7 @@
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,.45);
       width: 100%;
-      max-width: 360px;
+      max-width: 360px;   /* ✅ ความกว้าง fix */
       text-align: center;
     }
     h1 {
@@ -29,8 +29,12 @@
       font-size: 1.5rem;
       font-weight: 700;
     }
+    input, button {
+      display: block;
+      width: 100%;        /* ✅ ให้กว้างเท่ากัน */
+      box-sizing: border-box; /* ✅ ป้องกันเกินเพราะ padding */
+    }
     input {
-      width: 100%;
       padding: 12px 14px;
       margin: 8px 0;
       border-radius: 10px;
@@ -44,7 +48,6 @@
       border-color: #2563eb;
     }
     button {
-      width: 100%;
       padding: 12px;
       border: none;
       border-radius: 10px;
@@ -68,7 +71,7 @@
 </head>
 <body>
   <div class="card">
-    <h1>เข้าสู่ระบบแอดมิน</h1>
+    <h1>เข้าสู่ระบบหลังบ้าน</h1>
     <form id="loginForm">
       <input id="email" type="email" placeholder="Email" required>
       <input id="password" type="password" placeholder="Password" required>
