@@ -113,9 +113,8 @@
   <!-- สคริปต์หลัก -->
   <script>
   (function(){
-    const API_BASE = location.hostname.includes('localhost')
-      ? ''
-      : 'https://qrcode-project-self.vercel.app';
+    // ✅ ชี้ไป backend Vercel ของคุณ (HTTPS เท่านั้น)
+    const API_BASE = 'https://backend-github-io-mrli.vercel.app';
 
     const img = document.getElementById('qrImg');
     const sizeLabel = document.getElementById('sizeLabel');
@@ -169,19 +168,37 @@
       btnCopy.classList.remove('hidden');
     }
 
+    // ตัวช่วยยิง POST + ตรวจ response
+    async function postJSON(url, payload){
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+      const json = await res.json().catch(()=> ({}));
+      if (!res.ok || json?.ok === false) {
+        throw new Error(json?.error || res.statusText);
+      }
+      return json;
+    }
+
+    // ✅ ส่งเข้า backend (ลอง 2 path: /api/qr-create และ /api/qr/create)
     async function sendToBackend(code){
+      const payload = { uuid: code, user_agent: navigator.userAgent };
       try{
-        const res = await fetch(`${API_BASE}/api/qr/create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uuid: code })
-        });
-        const json = await res.json().catch(()=> ({}));
-        if (!res.ok || !json?.ok) throw new Error(json?.error || res.statusText);
+        // path แบบ serverless
+        await postJSON(`${API_BASE}/api/qr-create`, payload);
         toast('บันทึกฐานข้อมูลสำเร็จ');
-      }catch(err){
-        console.error('sendToBackend error:', err);
-        toast('บันทึกฐานข้อมูลล้มเหลว (แต่คิวอาถูกล็อคในเครื่องแล้ว)');
+      }catch(e1){
+        try{
+          // path แบบ Express เดิม
+          await postJSON(`${API_BASE}/api/qr/create`, payload);
+          toast('บันทึกฐานข้อมูลสำเร็จ');
+        }catch(e2){
+          console.error('sendToBackend error:', e1, e2);
+          toast('บันทึกฐานข้อมูลล้มเหลว (แต่คิวอาถูกล็อคในเครื่องแล้ว)');
+        }
       }
     }
 
@@ -231,7 +248,7 @@
       toast('คัดลอกแล้ว');
     }
 
-    // ✅ เปลี่ยนโค้ดปุ่มแอดมิน
+    // ปุ่มแอดมิน → ไปหน้า admin
     btnAdmin?.addEventListener('click', ()=>{
       const input = prompt('รหัสแอดมิน');
       if (input === null) return;
@@ -249,7 +266,7 @@
     btnCopy?.addEventListener('click', copyCode);
     img?.addEventListener('click', ()=> storageGet()
       ? toast('คิวอาถูกล็อคแล้ว')
-      : toast('กด \"สุ่มคิวอา\" เพื่อสร้าง'));
+      : toast('กด "สุ่มคิวอา" เพื่อสร้าง'));
 
     (async ()=>{
       const locked = storageGet();
