@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Q-ARE-Code breaker? • UUID12 QR (Mobile)</title>
+  <style>
+    :root{
+      --bg:#e5e7eb;   /* พื้นหลังนอก */
+      --fg:#0b0f14;
+      --card:#f9fafb; /* พื้นหลังกรอบ gameplay (อ่อนกว่า bg, เข้มกว่า white ของ QR) */
+      --bd:rgba(0,0,0,.08);
+      --blue:#2563eb;
+      color-scheme: light;
+    }
+    html, body{
+      height:100%; margin:0;
+      background:var(--bg) !important;
+      color:var(--fg) !important;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+    }
+    #wrap{
+      min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:12px;
+      padding:12px 8px calc(90px + env(safe-area-inset-bottom));
+    }
+    canvas{
+      background:var(--card); border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.04);
+      touch-action:none;
+    }
+
+    /* HUD กลางเสมอ + High Score */
+    #hud{ display:flex; gap:10px; align-items:center; justify-content:center; font-weight:600; flex-wrap:wrap; }
+    .pill{ padding:6px 10px; border-radius:999px; background:#f3f4f6; border:1px solid var(--bd); }
+
+    /* controls: เหลือเฉพาะ UUID กลาง */
+    #controls{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
+
+    .back-fixed{
+      position:fixed; left:12px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:1000;
+      display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px;
+      border:1px solid var(--bd); background:rgba(0,0,0,.04); color:var(--fg); font-weight:700; cursor:pointer;
+    }
+    .back-fixed svg{ opacity:.9 }
+
+    /* ปุ่ม Restart กลางหน้าจอเมื่อจบเกม */
+    #overlay{
+      position:absolute; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
+    }
+    #overlay.show{ display:flex; }
+    #overlay .card{
+      background:rgba(0,0,0,0.5); color:#fff; padding:16px 18px; border-radius:14px; text-align:center;
+      min-width: 220px;
+    }
+    #btnRestart{
+      margin-top:12px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer;
+    }
+
+    /* layout wrapper สำหรับ canvas + overlay ให้ซ้อนกันได้ */
+    .stage{ position:relative; display:inline-block; }
+  </style>
+</head>
+<body>
+  <button id="backBtn" class="back-fixed" type="button" aria-label="ย้อนกลับ">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    ย้อนกลับ
+  </button>
+
+  <div id="wrap">
+    <!-- HUD บน: รวม High Score กลางเสมอ -->
+    <div id="hud">
+      <div class="pill">High Score: <span id="hiscore">0</span></div>
+      <div class="pill">คะแนน: <span id="score">0</span></div>
+      <div class="pill">เวลา: <span id="time">30.0</span>s</div>
+      <div class="pill">ชีวิต: <span id="lives">1</span></div>
+    </div>
+
+    <!-- เวทีเกม: ซ้อน overlay ทับ canvas -->
+    <div class="stage">
+      <canvas id="game" width="360" height="640" aria-label="Q-ARE-Code breaker?"></canvas>
+      <div id="overlay">
+        <div class="card">
+          <div id="gameOverText" style="font-weight:800; font-size:20px; margin-bottom:6px;">Game Over • Score: 0</div>
+          <button id="btnRestart">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ด้านล่าง: เหลือเฉพาะ UUID กลาง -->
+    <div id="controls">
+      <div class="pill"><b>UUID12:</b> <code id="uuidText" style="font-weight:700"></code></div>
+    </div>
+  </div>
+
+  <script>
+  // ----- setup -----
+  const canvas=document.getElementById('game');
+  const ctx=canvas.getContext('2d');
+
+  const scoreEl=document.getElementById('score');
+  const timeEl=document.getElementById('time');
+  const livesEl=document.getElementById('lives');
+  const hiscoreEl=document.getElementById('hiscore');
+  const uuidText=document.getElementById('uuidText');
+
+  const overlay=document.getElementById('overlay');
+  const gameOverTextEl=document.getElementById('gameOverText');
+  const btnRestart=document.getElementById('btnRestart');
+
+  const ROUND_TIME = 30.0; // วินาที
+  const KEY_HISCORE = 'qr_breaker_hiscore_v1';
+
+  const state={
+    running:false, level:1, score:0, lives:1,
+    // 👇 ยกถาดรองขึ้นสูงขึ้น (จาก -28 → -80)
+    paddle:{x:canvas.width/2, y:canvas.height-100, w:70, h:12, speed:9},
+    ball:{x:canvas.width/2, y:canvas.height-120, r:6, vx:0, vy:0, speed:5},
+    bricks:[], gridMeta:null,
+    qrImg:null, currentMatrix:null,
+    gridScale:0.8,
+    effects:[],
+    timeLeft: ROUND_TIME,
+    lastTS: null,
+    showGameOver:false
+  };
+
+  // ---- responsive ----
+  function fitCanvas(){
+    const baseW=360, baseH=640;
+    const maxW=Math.min(window.innerWidth-24, 420);
+    const scale=Math.min(maxW/baseW, 1);
+    canvas.style.width=Math.round(baseW*scale)+'px';
+    canvas.style.height=Math.round(baseH*scale)+'px';
+  }
+  addEventListener('resize',fitCanvas); fitCanvas();
+
+  // ---- drawing ----
+  function drawPaddle(){ const p=state.paddle; ctx.fillStyle='#1f2937'; ctx.fillRect(Math.round(p.x-p.w/2),Math.round(p.y-p.h/2),p.w,p.h); }
+  function drawBall(){ const b=state.ball; ctx.fillStyle='#ef4444'; ctx.beginPath(); ctx.arc(Math.round(b.x),Math.round(b.y),b.r,0,Math.PI*2); ctx.fill(); }
+  function drawBricks(){
+    for(const br of state.bricks){
+      if(br.cleared || br.hp<=0) continue;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(br.x,br.y,br.w,br.h);
+    }
+  }
+  function drawEffects(){
+    for(let i=state.effects.length-1; i>=0; i--){
+      const e=state.effects[i];
+      if(e.kind==='ring'){
+        ctx.save();
+        ctx.globalAlpha = e.alpha;
+        ctx.lineWidth = e.lineWidth;
+        ctx.strokeStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+        // วงรอง
+        ctx.save();
+        ctx.globalAlpha = e.alpha*0.6;
+        ctx.lineWidth = Math.max(1, e.lineWidth-1);
+        ctx.strokeStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r*0.65, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+
+        e.r += e.growth;
+        e.alpha *= e.decay;
+        if(e.alpha < 0.04) state.effects.splice(i,1);
+      } else if(e.kind==='spark'){
+        ctx.save();
+        ctx.globalAlpha = e.alpha;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = e.color;
+        ctx.beginPath();
+        ctx.moveTo(e.x, e.y);
+        ctx.lineTo(e.x - Math.cos(e.angle)*e.len, e.y - Math.sin(e.angle)*e.len);
+        ctx.stroke();
+        ctx.restore();
+
+        e.x += Math.cos(e.angle)*e.speed;
+        e.y += Math.sin(e.angle)*e.speed;
+        e.len *= 0.95;
+        e.alpha *= 0.9;
+        if(e.alpha < 0.05 || e.len < 2) state.effects.splice(i,1);
+      }
+    }
+  }
+  function drawUI(){ /* ไม่มีปุ่มเริ่มแล้ว */ }
+  function drawFrame(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBricks();
+    drawEffects();
+    drawPaddle();
+    drawBall();
+    drawUI();
+  }
+
+  // ---- gameplay core ----
+  function resetBall(onPaddle=true){
+    const p=state.paddle, b=state.ball;
+    b.x=p.x; b.y=p.y - p.h/2 - b.r - 2; b.vx=0; b.vy=0;
+    if(!onPaddle){
+      const angle=(-60+Math.random()*120)*Math.PI/180;
+      b.vx=Math.cos(angle)*b.speed;
+      b.vy=Math.sin(angle)*b.speed;
+    }
+  }
+  function updateHud(){
+    scoreEl.textContent=state.score;
+    livesEl.textContent=state.lives;
+    timeEl.textContent = Math.max(0, state.timeLeft).toFixed(1);
+    hiscoreEl.textContent = getHiScore();
+  }
+  function newRound(resetUUID=true){
+    state.level=1;
+    state.score=0;
+    state.lives=1;
+    state.timeLeft=ROUND_TIME;
+    state.lastTS=null;
+    state.effects.length=0;
+    state.showGameOver=false;
+    overlay.classList.remove('show');
+    updateHud();
+    // ตั้งตำแหน่งเริ่มใหม่ตาม paddle ที่สูงขึ้น
+    state.paddle.y = canvas.height-80;
+    state.ball.y = state.paddle.y - state.paddle.h/2 - state.ball.r - 2;
+    resetBall(true);
+    state.running=false;
+    if(resetUUID){ makeQRFromUUID(); }
+    drawFrame();
+  }
+
+  function gameOver(reason){
+    state.running=false;
+    state.showGameOver=true;
+    // อัปเดต hi-score
+    const hs = getHiScore();
+    if(state.score > hs) setHiScore(state.score);
+    gameOverTextEl.textContent = `Game Over • Score: ${state.score}`;
+    overlay.classList.add('show'); // โชว์ปุ่ม Restart
+    drawFrame();                   // วาดเฟรมสุดท้าย (freeze)
+  }
+
+  function addReflectFlashStrong(cx, cy, baseR){
+    const ringColor = '#7dd3fc';
+    state.effects.push({ kind:'ring', x: cx, y: cy, r: Math.max(3, baseR*0.4), growth: Math.max(2.2, baseR*0.25), alpha: 0.9, decay: 0.88, lineWidth: 3, color: ringColor });
+    state.effects.push({ kind:'ring', x: cx, y: cy, r: Math.max(2, baseR*0.22), growth: Math.max(1.7, baseR*0.20), alpha: 0.75, decay: 0.88, lineWidth: 2, color: '#93c5fd' });
+    const sparks = 8;
+    for(let i=0;i<sparks;i++){
+      const angle = Math.random()*Math.PI*2;
+      state.effects.push({ kind:'spark', x: cx, y: cy, angle, len: Math.max(8, baseR*0.8)*(0.7+Math.random()*0.6), speed: 1.8 + Math.random()*1.2, alpha: 0.9, color: '#ffffff' });
+    }
+  }
+
+  function step(ts){
+    requestAnimationFrame(step);
+    const p=state.paddle, b=state.ball;
+
+    // อัปเดตเวลา
+    if(state.lastTS==null) state.lastTS = ts;
+    const dt = (ts - state.lastTS)/1000;
+    state.lastTS = ts;
+
+    if(state.showGameOver){
+      // ❄️ Freeze: ไม่อัปเดตฟิสิกส์/เวลา แค่โชว์เฟรมปัจจุบัน
+      drawFrame();
+      return;
+    }
+
+    if(state.running){
+      state.timeLeft -= dt;
+      if(state.timeLeft<=0){
+        state.timeLeft=0; updateHud();
+        gameOver('timeup');
+        return;
+      }
+    }
+    updateHud();
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    if(b.vx===0 && b.vy===0){ b.x=p.x; b.y=p.y - p.h/2 - b.r - 2; }
+    b.x+=b.vx; b.y+=b.vy;
+
+    if(b.x-b.r<0){ b.x=b.r; b.vx*=-1; }
+    if(b.x+b.r>canvas.width){ b.x=canvas.width-b.r; b.vx*=-1; }
+    if(b.y-b.r<0){ b.y=b.r; b.vy*=-1; }
+    if(b.y-b.r>canvas.height){
+      state.lives=0; updateHud();
+      gameOver('dead');
+      return;
+    }
+
+    // ชนแพดเดิล (ดีดเล็กน้อยเพื่อคุมมุม)
+    if(b.y+b.r>=p.y-p.h/2 && b.y-b.r<=p.y+p.h/2 && b.x>=p.x-p.w/2 && b.x<=p.x+p.w/2 && b.vy>0){
+      const hitPos=(b.x-p.x)/(p.w/2);
+      const angle=hitPos*(Math.PI/3);
+      const speed=Math.hypot(b.vx,b.vy)*1.015;
+      b.vx=Math.sin(angle)*speed;
+      b.vy=-Math.cos(angle)*speed;
+      b.y=p.y - p.h/2 - b.r - 1;
+      // กันลูกติด inside paddle
+      if(b.vy>0) b.vy*=-1;
+    }
+
+    // ชนอิฐดำ (ไม่มีบูสต์ความเร็ว)
+    for(const br of state.bricks){
+      if(br.hp<=0 || br.cleared) continue;
+      if(circleRectOverlap(b.x,b.y,b.r,br.x,br.y,br.w,br.h)){
+        const dxL=Math.abs((br.x) - (b.x + b.r));
+        const dxR=Math.abs((b.x - b.r) - (br.x + br.w));
+        const dyT=Math.abs((br.y) - (b.y + b.r));
+        const dyB=Math.abs((b.y - b.r) - (br.y + br.h));
+        const minPen=Math.min(dxL,dxR,dyT,dyB);
+        if(minPen===dxL||minPen===dxR) b.vx*=-1; else b.vy*=-1;
+
+        const hitX = Math.max(br.x, Math.min(b.x, br.x+br.w));
+        const hitY = Math.max(br.y, Math.min(b.y, br.y+br.h));
+        addReflectFlashStrong(hitX, hitY, Math.min(br.w, br.h));
+
+        br.hp = 0; br.cleared = true;
+        state.score += 10; updateHud();
+        break;
+      }
+    }
+
+    drawBricks();
+    drawEffects();
+    drawPaddle();
+    drawBall();
+    drawUI();
+  }
+
+  function circleRectOverlap(cx,cy,r,rx,ry,rw,rh){
+    const nx=Math.max(rx,Math.min(cx,rx+rw)), ny=Math.max(ry,Math.min(cy,ry+rh));
+    const dx=cx-nx, dy=cy-ny; return dx*dx+dy*dy<=r*r;
+  }
+
+  // ---- controls ----
+  function movePaddle(dirOrX){
+    const p=state.paddle;
+    if(typeof dirOrX==='number' && Math.abs(dirOrX)<=1){ p.x+=dirOrX*p.speed*2.2; }
+    else if(typeof dirOrX==='number'){ p.x=dirOrX; }
+    p.x=Math.max(p.w/2, Math.min(canvas.width-p.w/2, p.x));
+  }
+  function launch(){ if(state.running || state.showGameOver) return; state.running=true; resetBall(false); }
+  addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')movePaddle(-1); if(e.key==='ArrowRight')movePaddle(1); if(e.key===' ')launch(); });
+  canvas.addEventListener('mousemove',e=>{ const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; movePaddle((e.clientX-rect.left)*scaleX); });
+  canvas.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(!t) return; const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; movePaddle((t.clientX-rect.left)*scaleX); e.preventDefault(); }, {passive:false});
+  canvas.addEventListener('touchstart', ()=>launch(), {passive:true});
+  canvas.addEventListener('click', ()=>launch());
+
+  // ---- QR + HiScore helpers ----
+  function uuid12(){
+    const bytes=(crypto&&crypto.getRandomValues)?crypto.getRandomValues(new Uint8Array(6)):new Uint8Array(6).map(()=>Math.floor(Math.random()*256));
+    return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  function getHiScore(){
+    const v = parseInt(localStorage.getItem(KEY_HISCORE)||'0',10);
+    return Number.isFinite(v)?v:0;
+  }
+  function setHiScore(v){
+    localStorage.setItem(KEY_HISCORE, String(v));
+    hiscoreEl.textContent = v;
+  }
+  function loadImage(url){ return new Promise(resolve=>{ const img=new Image(); img.onload=()=>resolve(img); img.src=url; img.crossOrigin='anonymous'; }); }
+  async function makeQRFromUUID(){
+    const id=uuid12();
+    uuidText.textContent=id;
+    const url=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&ecc=M&margin=0`;
+    const img=await loadImage(url); state.qrImg=img;
+    const thresh=128; // คงที่
+    state.currentMatrix=await imageToMatrix(img, null, 0, thresh);
+    buildBricksFromMatrix(state.currentMatrix); // สร้างเฉพาะดำ
+    resetBall(true); state.running=false; updateHud(); drawFrame();
+  }
+
+  async function imageToMatrix(img, modules, quietPx, thresh){
+    const off=document.createElement('canvas'); const N=Math.max(img.width,img.height);
+    off.width=off.height=N; const octx=off.getContext('2d');
+    const sc=Math.min(N/img.width, N/img.height); const w=img.width*sc, h=img.height*sc;
+    octx.fillStyle='#fff'; octx.fillRect(0,0,N,N);
+    octx.drawImage(img,(N-w)/2,(N-h)/2,w,h);
+    if(!modules){ modules=21; }
+    const start=quietPx, end=N-quietPx, size=end-start, cell=size/modules, matrix=[];
+    for(let r=0;r<modules;r++){
+      const row=[];
+      for(let c=0;c<modules;c++){
+        const sx=Math.floor(start+c*cell), sy=Math.floor(start+r*cell);
+        const sw=Math.max(1,Math.ceil(cell)), sh=Math.max(1,Math.ceil(cell));
+        const data=octx.getImageData(sx,sy,sw,sh).data;
+        let sum=0,cnt=0;
+        for(let i=0;i<data.length;i+=4){
+          sum+=0.2126*data[i]+0.7152*data[i+1]+0.0722*data[i+2];
+          cnt++;
+        }
+        row.push((sum/cnt)<thresh?1:0); // 1 = ดำ, 0 = ขาว
+      }
+      row.length && matrix.push(row);
+    }
+    return matrix;
+  }
+
+  function buildBricksFromMatrix(mat){
+    const rows=mat.length, cols=mat[0].length;
+    const maxW=Math.min(canvas.width-16, Math.round(canvas.width*state.gridScale));
+    const maxH=Math.floor(Math.min(canvas.height*0.45, canvas.height*state.gridScale));
+    let moduleSize=Math.floor(Math.min(maxW/cols, maxH/rows));
+    moduleSize=Math.max(6, moduleSize);
+
+    const gridW=cols*moduleSize, gridH=rows*moduleSize;
+    const startX=Math.floor((canvas.width - gridW)/2);
+    const startY=32;
+
+    const bricks=[]; let id=1;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        if(mat[r][c]!==1) continue; // เฉพาะดำ
+        const x=startX + c*moduleSize;
+        const y=startY + r*moduleSize;
+        bricks.push({ id:id++, x,y, w:moduleSize, h:moduleSize, hp:1, type:'black', cleared:false });
+      }
+    }
+    state.bricks=bricks;
+    state.gridMeta={ startX,startY,moduleSize,cols,rows };
+  }
+
+  // ---- overlay restart ----
+  btnRestart.addEventListener('click', ()=>{
+    newRound(true); // สุ่ม UUID ใหม่แล้วเริ่มรอบใหม่
+  });
+
+  // ---- init ----
+  function launch(){ if(state.running || state.showGameOver) return; state.running=true; resetBall(false); }
+  function movePaddle(dirOrX){
+    const p=state.paddle;
+    if(typeof dirOrX==='number' && Math.abs(dirOrX)<=1){ p.x+=dirOrX*p.speed*2.2; }
+    else if(typeof dirOrX==='number'){ p.x=dirOrX; }
+    p.x=Math.max(p.w/2, Math.min(canvas.width-p.w/2, p.x));
+  }
+  addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')movePaddle(-1); if(e.key==='ArrowRight')movePaddle(1); if(e.key===' ')launch(); });
+  canvas.addEventListener('mousemove',e=>{ const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; movePaddle((e.clientX-rect.left)*scaleX); });
+  canvas.addEventListener('touchmove',e=>{ const t=e.touches[0]; if(!t) return; const rect=canvas.getBoundingClientRect(); const scaleX=canvas.width/rect.width; movePaddle((t.clientX-rect.left)*scaleX); e.preventDefault(); }, {passive:false});
+  canvas.addEventListener('touchstart', ()=>launch(), {passive:true});
+  canvas.addEventListener('click', ()=>launch());
+
+  // เริ่มเกมครั้งแรก
+  hiscoreEl.textContent = getHiScore();
+  newRound(true);
+  requestAnimationFrame(step);
+
+  // back button
+  document.getElementById('backBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    try{
+      if(document.referrer && new URL(document.referrer).origin === location.origin){ history.back(); }
+      else { location.href = 'index.html'; }
+    }catch(err){ history.back(); }
+  });
+  </script>
+</body>
+</html>
