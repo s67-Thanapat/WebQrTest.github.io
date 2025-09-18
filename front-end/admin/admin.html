@@ -11,7 +11,7 @@
     h1{margin:0 0 12px}
     .bar{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);padding:10px;border-radius:12px}
     .spacer{flex:1}
-    input[type="text"], input[type="email"], input[type="password"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg)}
+    input[type="search"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg);min-width:320px}
     button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
     .btn{background:var(--accent);color:#fff}.btn:hover{background:var(--accent-2)}
     .btn-ghost{background:transparent;color:var(--fg);border:1px solid var(--border)}
@@ -24,12 +24,14 @@
     .muted{color:var(--muted)}
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
     select{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:6px}
+    /* modal */
     .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55)}
     .modal.show{display:grid}
     .card{background:var(--card);border:1px solid var(--border);padding:16px;border-radius:12px;min-width:320px}
     .card h3{margin:0 0 10px}
+    .card label{font-size:12px;color:var(--muted)}
+    .card input{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg)}
     .row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-    .badge{display:inline-block;border:1px solid var(--border);padding:2px 8px;border-radius:999px}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -42,9 +44,20 @@
       <button class="btn-ghost" id="btnExport">⬇️ ส่งออก CSV</button>
       <button class="btn-del" id="btnBulkDelete">🗑️ ลบที่เลือก</button>
       <span class="spacer"></span>
-      <input id="search" type="text" placeholder="ค้นหา: id / code / user agent" />
-      <button class="btn-ghost" id="btnCheckBackend">🧪 เทส backend</button>
-      <span id="checkResult" class="badge" style="display:none"></span>
+
+      <!-- ช่องค้นหา: ปิด autofill + spellcheck -->
+      <input
+        id="search"
+        type="search"
+        placeholder="ค้นหา: id / code / user agent"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        enterkeyhint="search"
+      />
+
+      <button class="btn-ghost" id="btnCheckMe">🔎 เทส backend</button>
       <button class="btn-ghost" id="btnResetPw">🔑 รีเซ็ตรหัสผู้ใช้</button>
       <button class="btn-ghost" id="btnLogout">🚪 Logout</button>
     </div>
@@ -89,10 +102,10 @@
   </div>
 
 <script>
-/* ---------- CONFIG (แก้ให้เป็นของคุณ) ---------- */
-const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // ← ใส่ของจริง
-const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app"; // ← ใส่โดเมน backend ของคุณ
+/* ---------- CONFIG ---------- */
+const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";           // แก้ให้ตรงโปรเจกต์
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // แก้ให้ตรงโปรเจกต์
+const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app";          // ถ้ามี backend ใช้ในปุ่มทดสอบ/รีเซ็ต
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
@@ -104,8 +117,7 @@ const btnReload = document.getElementById("btnReload");
 const btnExport = document.getElementById("btnExport");
 const btnBulkDelete = document.getElementById("btnBulkDelete");
 const btnLogout = document.getElementById("btnLogout");
-const btnCheckBackend = document.getElementById("btnCheckBackend");
-const checkResult = document.getElementById("checkResult");
+const btnCheckMe = document.getElementById("btnCheckMe");
 const search = document.getElementById("search");
 const checkAll = document.getElementById("checkAll");
 const pageSize = document.getElementById("pageSize");
@@ -126,27 +138,40 @@ document.getElementById("mSubmit").onclick = adminResetPassword;
 (async () => {
   const { data:{ session } } = await supabase.auth.getSession();
   if (!session) { window.location.href = "login.html"; return; }
+
+  // กัน autofill: ล้างช่องค้นหาทันที + อีกครั้งหลัง paint
+  search.value = "";
+  setTimeout(() => search.value = "", 0);
+
   loadData();
 })();
 
 /* ---------- STATE / RENDER ---------- */
 const st = { raw:[], filtered:[], page:1, pageSize:20 };
 function fmtDate(iso){const d = new Date(iso);return isNaN(d)? "-" : tzFmt.format(d);}
+
 function applyFilter(){
-  const q=(search.value||"").trim().toLowerCase();
+  let q=(search.value||"").trim().toLowerCase();
+
+  // กันเคสเบราว์เซอร์ autofill อีเมล -> ตัดทิ้ง
+  if (q.includes('@')) q = "";
+
   st.filtered = st.raw.filter(r=>{
     if(!q) return true;
-    return String(r.id).includes(q) ||
-           String(r.code||"").toLowerCase().includes(q) ||
-           String(r.user_agent||"").toLowerCase().includes(q);
+    return String(r.id).toLowerCase().includes(q)
+        || String(r.code||"").toLowerCase().includes(q)
+        || String(r.user_agent||"").toLowerCase().includes(q);
   });
   st.page=1;
 }
+
 function getPageData(){const start=(st.page-1)*st.pageSize;return st.filtered.slice(start,start+st.pageSize);}
+
 function render(){
   const rows = getPageData();
-  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="6" class="muted">ไม่มีข้อมูล</td></tr>`; }
-  else{
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">ไม่มีข้อมูล</td></tr>`;
+  }else{
     tbody.innerHTML = "";
     for(const r of rows){
       const tr = document.createElement("tr");
@@ -203,8 +228,15 @@ btnExport.onclick = ()=>{
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 };
 btnReload.onclick = loadData;
-search.oninput = ()=>{applyFilter();render();};
-pageSize.onchange = ()=>{st.pageSize=parseInt(pageSize.value,10); render();};
+
+// ⬇️ ใช้ keyup/search แทน oninput เพื่อเลี่ยง autofill
+search.addEventListener('keyup', e => {
+  if (!e.isTrusted) return; // event จากผู้ใช้เท่านั้น
+  applyFilter(); render();
+});
+search.addEventListener('search', () => { applyFilter(); render(); });
+
+pageSize.onchange = ()=>{ st.pageSize=parseInt(pageSize.value,10); render(); };
 checkAll.onchange = ()=>{ document.querySelectorAll(".rowcheck").forEach(cb=> cb.checked = checkAll.checked); };
 btnBulkDelete.onclick = async ()=>{
   const ids = [...document.querySelectorAll(".rowcheck:checked")].map(cb=>cb.value);
@@ -217,45 +249,16 @@ btnBulkDelete.onclick = async ()=>{
 };
 btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
 
-/* ---------- TEST BACKEND (ping → me) ---------- */
-btnCheckBackend.onclick = async ()=>{
-  checkResult.style.display = "inline-block";
-  checkResult.textContent = "กำลังตรวจสอบ...";
-  checkResult.style.borderColor = "var(--border)";
-
+/* ---------- TEST BACKEND (optional) ---------- */
+btnCheckMe.onclick = async ()=>{
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(!session){ alert("ยังไม่ได้ล็อกอิน"); return; }
   try{
-    // 1) ping — ไม่ต้อง token (ทดสอบ CORS ก่อน)
-    const ping = await fetch(`${BACKEND_BASE}/admin/ping`, { method: "GET" });
-    if(!ping.ok){
-      const t = await ping.text();
-      checkResult.textContent = `ping ${ping.status}: ${t.slice(0,80)}`;
-      checkResult.style.borderColor = "#f87171";
-      return;
-    }
-    const pj = await ping.json();
-    checkResult.textContent = `ping ok (${pj.time ?? "no time"})`;
-
-    // 2) me — ใช้ token ตรวจสิทธิ์ admin
-    const { data:{ session } } = await supabase.auth.getSession();
-    if(!session){
-      checkResult.textContent = "ยังไม่ล็อกอิน Supabase";
-      checkResult.style.borderColor = "#fbbf24";
-      return;
-    }
-    const r = await fetch(`${BACKEND_BASE}/admin/me`, {
-      headers: { Authorization: "Bearer " + session.access_token }
-    });
-    const j = await r.json().catch(()=> ({}));
-    if(!r.ok){
-      checkResult.textContent = `me ${r.status}: ${j.error || "error"}`;
-      checkResult.style.borderColor = "#f87171";
-      return;
-    }
-    checkResult.textContent = `me ok (is_admin=${j.is_admin ? "true":"false"})`;
-    checkResult.style.borderColor = j.is_admin ? "#34d399" : "#fbbf24";
+    const r = await fetch(`${BACKEND_BASE}/admin/me`, { headers: { Authorization: "Bearer " + session.access_token }});
+    const j = await r.json();
+    alert(`${r.status} ${r.ok?"OK":"ERR"}\n` + JSON.stringify(j,null,2));
   }catch(e){
-    checkResult.textContent = "fetch error: " + e.message;
-    checkResult.style.borderColor = "#f87171";
+    alert("fetch error: " + e.message);
   }
 };
 
