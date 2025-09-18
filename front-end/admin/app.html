@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin • QR Codes</title>
+  <style>
+    :root{ --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --card:#111318; --accent:#2563eb; --accent-2:#1d4ed8; --danger:#dc2626; --border:rgba(255,255,255,.08) }
+    body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,Segoe UI,Roboto}
+    .wrap{max-width:1100px;margin:20px auto;padding:16px}
+    .bar{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);padding:10px;border-radius:12px}
+    .spacer{flex:1}
+    input[type="search"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg);min-width:320px}
+    button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
+    .btn{background:var(--accent);color:#fff}.btn:hover{background:var(--accent-2)}
+    .btn-ghost{background:transparent;color:var(--fg);border:1px solid var(--border)}
+    .btn-del{background:var(--danger);color:#fff}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{border:1px solid var(--border);padding:10px;text-align:left}
+    th{background:#14161d} tr:nth-child(even){background:#0f1117}
+    .right{text-align:right} .muted{color:var(--muted)}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="wrap">
+  <h1>ระบบหลังบ้าน - QR Codes</h1>
+
+  <div class="bar">
+    <button class="btn" id="btnReload">🔄 โหลดข้อมูล</button>
+    <button class="btn-ghost" id="btnExport">⬇️ ส่งออก CSV</button>
+    <button class="btn-del" id="btnBulkDelete">🗑️ ลบที่เลือก</button>
+    <span class="spacer"></span>
+    <input id="search" type="search" placeholder="ค้นหา id/code/user agent" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <button class="btn-ghost" id="btnLogout">🚪 Logout</button>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th style="width:36px"><input type="checkbox" id="checkAll"></th>
+      <th>ID</th><th>Code</th><th>User Agent</th><th>Created At</th><th class="right">Action</th>
+    </tr></thead>
+    <tbody id="tbody"><tr><td colspan="6" class="muted">กำลังโหลด...</td></tr></tbody>
+  </table>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+    <div id="countLabel" class="muted">—</div>
+    <div>ต่อหน้า
+      <select id="pageSize"><option>10</option><option selected>20</option><option>50</option></select>
+      <span id="pageInfo" class="muted" style="margin-left:8px">หน้า 1/1</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ----- CONFIG ----- */
+const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";       // <- ของคุณ
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";                         // <- ของคุณ
+const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app";      // <- ของคุณ
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{persistSession:true} });
+
+/* ----- GATE: ต้องเป็นแอดมินเท่านั้น ----- */
+(async () => {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (!session) { location.href = "./login.html"; return; }
+  try{
+    const r = await fetch(`${BACKEND_BASE}/admin/me`, { headers: { Authorization: "Bearer "+session.access_token }});
+    const j = await r.json();
+    if (!r.ok || j?.is_admin !== true) { await sb.auth.signOut(); location.href = "./login.html"; return; }
+  }catch{ await sb.auth.signOut(); location.href = "./login.html"; return; }
+
+  // กัน autofill
+  search.value = ""; setTimeout(()=>search.value="",0);
+  loadData();
+})();
+
+/* ----- UI / STATE ----- */
+const tbody = document.getElementById("tbody");
+const btnReload = document.getElementById("btnReload");
+const btnExport = document.getElementById("btnExport");
+const btnBulkDelete = document.getElementById("btnBulkDelete");
+const btnLogout = document.getElementById("btnLogout");
+const search = document.getElementById("search");
+const checkAll = document.getElementById("checkAll");
+const pageSize = document.getElementById("pageSize");
+const pageInfo = document.getElementById("pageInfo");
+const countLabel = document.getElementById("countLabel");
+const tzFmt = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:'Asia/Bangkok'});
+
+const st={raw:[],filtered:[],page:1,pageSize:20};
+function fmtDate(x){const d=new Date(x);return isNaN(d)?"-":tzFmt.format(d);}
+function applyFilter(){
+  let q=(search.value||"").trim().toLowerCase();
+  if(q.includes("@")) q=""; // กัน autofill อีเมล
+  st.filtered = st.raw.filter(r=>{
+    if(!q) return true;
+    return String(r.id).includes(q) || (r.code||"").toLowerCase().includes(q) || (r.user_agent||"").toLowerCase().includes(q);
+  });
+  st.page=1;
+}
+function getPage(){const s=(st.page-1)*st.pageSize;return st.filtered.slice(s,s+st.pageSize);}
+function render(){
+  const rows=getPage();
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="muted">ไม่มีข้อมูล</td></tr>';}
+  else{
+    tbody.innerHTML="";
+    for(const r of rows){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><input type="checkbox" class="rowcheck" value="${r.id}"></td>
+        <td>${r.id}</td>
+        <td><span>${r.code??""}</span> <button class="btn-ghost" data-copy="${r.code??""}" style="margin-left:6px">คัดลอก</button></td>
+        <td class="muted" title="${r.user_agent||""}">${r.user_agent||"-"}</td>
+        <td>${fmtDate(r.created_at)}</td>
+        <td class="right"><button class="btn-del" data-del="${r.id}">ลบ</button></td>`;
+      tbody.appendChild(tr);
+    }
+    tbody.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>navigator.clipboard?.writeText(b.dataset.copy||""));
+    tbody.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delRow(b.dataset.del));
+  }
+  const total=st.filtered.length, pages=Math.max(1,Math.ceil(total/st.pageSize));
+  if(st.page>pages) st.page=pages;
+  pageInfo.textContent=`หน้า ${st.page}/${pages}`;
+  countLabel.textContent=`ทั้งหมด ${total} รายการ`;
+}
+
+/* ----- CRUD ----- */
+async function loadData(){
+  tbody.innerHTML='<tr><td colspan="6" class="muted">กำลังโหลด...</td></tr>';
+  const { data, error } = await sb.from("qrcodes").select("id,code,user_agent,created_at").order("created_at",{ascending:false}).limit(1000);
+  if(error){ tbody.innerHTML=`<tr><td colspan="6">❌ ${error.message}</td></tr>`; return; }
+  st.raw=data||[]; applyFilter(); render();
+}
+async function delRow(id){
+  if(!confirm(`ลบรายการ ${id}?`)) return;
+  const { error } = await sb.from("qrcodes").delete().eq("id",id);
+  if(error){ alert("❌ "+error.message); return; }
+  st.raw=st.raw.filter(x=>String(x.id)!==String(id)); applyFilter(); render();
+}
+
+/* ----- EVENTS ----- */
+btnReload.onclick=loadData;
+btnLogout.onclick=async()=>{ await sb.auth.signOut(); location.href="./login.html"; };
+btnExport.onclick=()=>{
+  const esc=s=>s==null? "": /[",\n]/.test(String(s)) ? `"${String(s).replace(/"/g,'""')}"` : String(s);
+  const lines=[["id","code","user_agent","created_at(ISO)","created_at(ICT)"].join(",")];
+  for(const r of st.filtered){ lines.push([esc(r.id),esc(r.code??""),esc(r.user_agent??""),esc(r.created_at??""),esc(fmtDate(r.created_at))].join(",")); }
+  const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download=`qrcodes_${new Date().toISOString().replace(/[:.]/g,"-")}.csv`; a.click(); URL.revokeObjectURL(url);
+};
+search.addEventListener('keyup',e=>{ if(!e.isTrusted) return; applyFilter(); render(); });
+search.addEventListener('search',()=>{ applyFilter(); render(); });
+pageSize.onchange=()=>{ st.pageSize=parseInt(pageSize.value,10); render(); };
+checkAll.onchange=()=>{ document.querySelectorAll(".rowcheck").forEach(cb=>cb.checked=checkAll.checked); };
+btnBulkDelete.onclick=async()=>{
+  const ids=[...document.querySelectorAll(".rowcheck:checked")].map(cb=>cb.value);
+  if(!ids.length) return alert("ยังไม่ได้เลือกรายการ");
+  if(!confirm(`ลบ ${ids.length} รายการ?`)) return;
+  const { error } = await sb.from("qrcodes").delete().in("id",ids);
+  if(error){ alert("❌ "+error.message); return; }
+  st.raw=st.raw.filter(x=>!ids.includes(String(x.id))); applyFilter(); render();
+};
+</script>
+</body>
+</html>
