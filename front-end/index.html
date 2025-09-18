@@ -83,7 +83,7 @@
 </head>
 <body>
   <!-- ปุ่มแอดมิน มุมซ้ายบน -->
-  <button id="btnAdmin" class="btn-admin-left" type="button" aria-label="Admin Reset">ติดต่อแอดมิน</button>
+  <button id="btnAdmin" class="btn-admin-left" type="button" aria-label="Admin">ติดต่อแอดมิน</button>
 
   <!-- ปุ่มฐานการเรียนรู้ มุมขวาบน -->
   <a href="Extention.html" class="btn-float-right"
@@ -110,12 +110,13 @@
 
   <a id="btnPlay" href="game.html" class="btn-play">เล่นเกม</a>
 
-  <!-- สคริปต์หลัก -->
   <script>
   (function(){
-    // ✅ ชี้ไป backend Vercel ของคุณ (HTTPS เท่านั้น)
-    const API_BASE = 'https://backend-github-io-mrli.vercel.app';
+    // ====== CONFIG ======
+    // ใช้ backend จริงของคุณ (Vercel)
+    const BACKEND_BASE = 'https://backend-github-io-mrli.vercel.app';
 
+    // ====== Elements ======
     const img = document.getElementById('qrImg');
     const sizeLabel = document.getElementById('sizeLabel');
     const uuidText = document.getElementById('uuidText');
@@ -124,10 +125,12 @@
     const btnCopy = document.getElementById('btnCopy');
     const btnAdmin = document.getElementById('btnAdmin');
 
+    // ====== Consts ======
     const QR_PX = 1024;
     const STORAGE_KEY = 'qr_locked_code_v1';
     const ADMIN_PASS = '12345';
 
+    // ====== Helpers ======
     function toast(msg){
       const el = document.createElement('div');
       el.className = 'toast';
@@ -137,7 +140,6 @@
     }
     const storageGet = () => { try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; } };
     const storageSet = v => { try { localStorage.setItem(STORAGE_KEY, v); } catch {} };
-    const storageDel = () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} };
 
     function shortId(len){
       const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -168,55 +170,54 @@
       btnCopy.classList.remove('hidden');
     }
 
-    // ตัวช่วยยิง POST + ตรวจ response
-    async function postJSON(url, payload){
+    // ====== Backend call (ลองทั้งมี/ไม่มี /api) ======
+    async function postJSON(url, body){
       const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        cache: 'no-store',
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(body)
       });
-      const json = await res.json().catch(()=> ({}));
-      if (!res.ok || json?.ok === false) {
-        throw new Error(json?.error || res.statusText);
-      }
-      return json;
+      let data = {};
+      try { data = await res.json(); } catch {}
+      if(!res.ok || data?.ok === false) throw new Error(data?.error || `${res.status} ${res.statusText}`);
+      return data;
     }
-
-    // ✅ ส่งเข้า backend (ลอง 2 path: /api/qr-create และ /api/qr/create)
-    async function sendToBackend(code){
+    async function sendToBackendOnce(code){
       const payload = { uuid: code, user_agent: navigator.userAgent };
-      try{
-        // path แบบ serverless
-        await postJSON(`${API_BASE}/api/qr-create`, payload);
-        toast('บันทึกฐานข้อมูลสำเร็จ');
-      }catch(e1){
-        try{
-          // path แบบ Express เดิม
-          await postJSON(`${API_BASE}/api/qr/create`, payload);
-          toast('บันทึกฐานข้อมูลสำเร็จ');
-        }catch(e2){
-          console.error('sendToBackend error:', e1, e2);
-          toast('บันทึกฐานข้อมูลล้มเหลว (แต่คิวอาถูกล็อคในเครื่องแล้ว)');
-        }
+      const urls = [
+        `${BACKEND_BASE}/api/qr-create`,
+        `${BACKEND_BASE}/qr-create`,
+        `${BACKEND_BASE}/api/qr/create`,
+        `${BACKEND_BASE}/qr/create`,
+      ];
+      let lastErr;
+      for(const u of urls){
+        try { await postJSON(u, payload); return true; }
+        catch(e){ lastErr = e; console.warn('POST fail:', u, e.message); }
       }
+      throw lastErr || new Error('post failed');
     }
 
+    // ====== Actions ======
     async function handleGenerateOnce(){
       if (btnGen) { btnGen.disabled = true; btnGen.style.opacity = .7; }
       try{
         const existed = storageGet();
         if (existed) {
           applyLockedUI(existed);
-          toast('คิวอาถูกล็อคไว้แล้ว — กำลังซิงก์เข้าฐาน');
-          await sendToBackend(existed);
+          toast('คิวอาถูกล็อคไว้แล้ว');
           return;
         }
         const code = shortId(12);
+        // บันทึกฐาน "แค่ครั้งแรก" เท่านั้น
+        await sendToBackendOnce(code);
+        // เก็บลง localStorage หลังบันทึกสำเร็จ
         storageSet(code);
         applyLockedUI(code);
-        toast('สร้างและล็อคคิวอาแล้ว');
-        await sendToBackend(code);
+        toast('สร้างและบันทึกสำเร็จ');
+      } catch(err){
+        console.error('sendToBackend error:', err);
+        toast('บันทึกฐานข้อมูลล้มเหลว, โปรดลองใหม่');
       } finally {
         if (btnGen) { btnGen.disabled = false; btnGen.style.opacity = 1; }
       }
@@ -248,7 +249,7 @@
       toast('คัดลอกแล้ว');
     }
 
-    // ปุ่มแอดมิน → ไปหน้า admin
+    // ไปหน้า admin ด้วยรหัสง่าย ๆ
     btnAdmin?.addEventListener('click', ()=>{
       const input = prompt('รหัสแอดมิน');
       if (input === null) return;
@@ -260,6 +261,7 @@
       }
     });
 
+    // events
     img?.addEventListener('load', updateSizeLabel);
     btnGen?.addEventListener('click', handleGenerateOnce);
     btnSave?.addEventListener('click', savePNG);
@@ -268,11 +270,12 @@
       ? toast('คิวอาถูกล็อคแล้ว')
       : toast('กด "สุ่มคิวอา" เพื่อสร้าง'));
 
-    (async ()=>{
+    // ====== เริ่มหน้า: แสดงอย่างเดียว ถ้ามีของเดิม (ไม่ส่ง backend ซ้ำ) ======
+    (function init(){
       const locked = storageGet();
       if (locked){
-        applyLockedUI(locked);
-        try { await sendToBackend(locked); } catch {}
+        applyLockedUI(locked);   // ✅ แสดงของเดิม
+        // ❌ ไม่เรียก sendToBackend() อีกแล้ว
       } else {
         uuidText.textContent = '—';
         img.removeAttribute('src');
