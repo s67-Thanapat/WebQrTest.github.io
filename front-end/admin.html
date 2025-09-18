@@ -24,7 +24,6 @@
     .muted{color:var(--muted)}
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
     select{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:6px}
-    /* Modal */
     .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55)}
     .modal.show{display:grid}
     .card{background:var(--card);border:1px solid var(--border);padding:16px;border-radius:12px;min-width:320px}
@@ -45,6 +44,7 @@
       <button class="btn-del" id="btnBulkDelete">🗑️ ลบที่เลือก</button>
       <span class="spacer"></span>
       <input id="search" type="text" placeholder="ค้นหา: id / code / user agent" />
+      <button class="btn-ghost" id="btnCheckMe">🔎 เทส backend</button>
       <button class="btn-ghost" id="btnResetPw">🔑 รีเซ็ตรหัสผู้ใช้</button>
       <button class="btn-ghost" id="btnLogout">🚪 Logout</button>
     </div>
@@ -90,9 +90,9 @@
 
 <script>
 /* ---------- CONFIG ---------- */
-const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";      // แก้ให้ตรง
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";             // แก้ให้ตรง
-const BACKEND_BASE = "http://127.0.0.1:8000";                 // เปลี่ยนได้ตามที่รันจริง
+const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_PUBLIC_ANON_KEY"; // ใส่ของจริง
+const BACKEND_BASE = "http://127.0.0.1:8000";     // ให้ตรงกับ backend
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
@@ -104,6 +104,7 @@ const btnReload = document.getElementById("btnReload");
 const btnExport = document.getElementById("btnExport");
 const btnBulkDelete = document.getElementById("btnBulkDelete");
 const btnLogout = document.getElementById("btnLogout");
+const btnCheckMe = document.getElementById("btnCheckMe");
 const search = document.getElementById("search");
 const checkAll = document.getElementById("checkAll");
 const pageSize = document.getElementById("pageSize");
@@ -127,7 +128,7 @@ document.getElementById("mSubmit").onclick = adminResetPassword;
   loadData();
 })();
 
-/* ---------- STATE ---------- */
+/* ---------- STATE / RENDER ---------- */
 const st = { raw:[], filtered:[], page:1, pageSize:20 };
 function fmtDate(iso){const d = new Date(iso);return isNaN(d)? "-" : tzFmt.format(d);}
 function applyFilter(){
@@ -157,7 +158,6 @@ function render(){
         <td class="right"><button class="btn-del" data-del="${r.id}">ลบ</button></td>`;
       tbody.appendChild(tr);
     }
-    // events
     tbody.querySelectorAll("[data-copy]").forEach(btn=>btn.onclick=()=>navigator.clipboard?.writeText(btn.dataset.copy||""));
     tbody.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>deleteRow(btn.dataset.del));
   }
@@ -216,6 +216,19 @@ btnBulkDelete.onclick = async ()=>{
 };
 btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
 
+/* ---------- TEST BACKEND ---------- */
+btnCheckMe.onclick = async ()=>{
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(!session){ alert("ยังไม่ได้ล็อกอิน"); return; }
+  try{
+    const r = await fetch(`${BACKEND_BASE}/admin/me`, { headers: { Authorization: "Bearer " + session.access_token }});
+    const j = await r.json();
+    alert(`${r.status} ${r.ok?"OK":"ERR"}\n` + JSON.stringify(j,null,2));
+  }catch(e){
+    alert("fetch error: " + e.message);
+  }
+};
+
 /* ---------- ADMIN RESET PASSWORD (via backend) ---------- */
 async function adminResetPassword(){
   const email = mEmail.value.trim();
@@ -224,15 +237,20 @@ async function adminResetPassword(){
   const { data:{ session } } = await supabase.auth.getSession();
   if(!session){ window.location.href="login.html"; return; }
   mMsg.textContent = "กำลังส่งคำสั่ง...";
-  const res = await fetch(`${BACKEND_BASE}/admin/reset-password`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json","Authorization":"Bearer "+session.access_token },
-    body: JSON.stringify({ email, new_password: pw })
-  });
-  const out = await res.json().catch(()=> ({}));
-  if(!res.ok){ mMsg.textContent = "❌ " + (out.error || JSON.stringify(out)); return; }
-  mMsg.textContent = "✅ " + (out.message || "สำเร็จ");
-  setTimeout(()=> modal.classList.remove("show"), 800);
+  try{
+    const res = await fetch(`${BACKEND_BASE}/admin/reset-password`,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json","Authorization":"Bearer "+session.access_token },
+      body: JSON.stringify({ email, new_password: pw })
+    });
+    const out = await res.json().catch(()=> ({}));
+    if(!res.ok){ mMsg.textContent = "❌ " + (out.error || JSON.stringify(out)); return; }
+    mMsg.textContent = "✅ " + (out.message || "สำเร็จ");
+    setTimeout(()=> modal.classList.remove("show"), 800);
+  }catch(err){
+    console.error("reset-password fetch error:", err);
+    mMsg.textContent = "❌ network error: " + err.message;
+  }
 }
 </script>
 </body>

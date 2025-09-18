@@ -8,6 +8,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// ===== ENV =====
 const {
   SUPABASE_URL,
   SUPABASE_ANON_KEY,
@@ -17,13 +18,22 @@ const {
 } = process.env;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("❌ ต้องตั้งค่า SUPABASE_URL, ANON_KEY, SERVICE_ROLE_KEY ใน .env");
+  throw new Error("❌ ต้องตั้งค่า SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY ใน .env");
 }
 
+// ===== CORS (dev-friendly) =====
 app.use(cors({
-  origin: (ALLOWED_ORIGINS || "").split(",").map(o => o.trim()),
-  credentials: true
+  origin: (ALLOWED_ORIGINS || "").split(",").map(o => o.trim()).filter(Boolean),
+  credentials: true,
+  methods: ["GET","POST","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization","apikey"]
 }));
+
+// ===== Request log (debug) =====
+app.use((req, _res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url} | origin=${req.headers.origin} | ua=${req.headers['user-agent']}`);
+  next();
+});
 
 // ===== Utils =====
 async function getUserFromToken(token) {
@@ -49,7 +59,12 @@ async function isAdmin(user_id) {
   return rows.length > 0;
 }
 
-// ===== Routes =====
+// ===== Health check =====
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+// ===== Admin APIs =====
 app.get("/admin/me", async (req, res) => {
   try {
     const auth = req.headers.authorization || "";
@@ -77,7 +92,7 @@ app.post("/admin/reset-password", async (req, res) => {
     const { email, new_password } = req.body;
     if (!email || !new_password) return res.status(400).json({ error: "email & new_password required" });
 
-    // หา user จาก email
+    // lookup user
     const lookup = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, {
       headers: {
         "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
@@ -88,7 +103,7 @@ app.post("/admin/reset-password", async (req, res) => {
     const user = body.users?.[0];
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // อัปเดตรหัสผ่าน
+    // update password
     const patch = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
       method: "PATCH",
       headers: {
@@ -110,6 +125,37 @@ app.post("/admin/reset-password", async (req, res) => {
   }
 });
 
+// ===== QR APIs =====
+app.post("/api/qr/create", async (req, res) => {
+  try {
+    const { uuid, user_agent } = req.body || {};
+    if (!uuid) return res.status(400).json({ error: "uuid required" });
+
+    const insert = await fetch(`${SUPABASE_URL}/rest/v1/qrcodes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      body: JSON.stringify({
+        code: uuid,
+        user_agent: user_agent || req.headers["user-agent"] || null
+      })
+    });
+
+    if (!insert.ok) {
+      const err = await insert.text();
+      return res.status(400).json({ error: err });
+    }
+
+    res.json({ ok: true, uuid });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ===== Start =====
 app.listen(PORT || 8000, () => {
   console.log(`🚀 Admin backend running on http://127.0.0.1:${PORT || 8000}`);
 });
