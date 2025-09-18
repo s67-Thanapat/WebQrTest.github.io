@@ -1,19 +1,19 @@
 <!DOCTYPE html>
-<html lang="th" translate="no">
+<html lang="th">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Panel - QR Codes</title>
   <style>
-    :root{ --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --card:#111318; --accent:#2563eb; --accent2:#1d4ed8; --danger:#dc2626; --border:rgba(255,255,255,.08) }
+    :root{ --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --card:#111318; --accent:#2563eb; --accent-2:#1d4ed8; --danger:#dc2626; --border:rgba(255,255,255,.08); }
     body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
     .wrap{max-width:1100px;margin:20px auto;padding:16px}
     h1{margin:0 0 12px}
     .bar{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);padding:10px;border-radius:12px}
     .spacer{flex:1}
-    input[type="text"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg)}
+    input[type="search"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--fg);min-width:320px}
     button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
-    .btn{background:var(--accent);color:#fff}.btn:hover{background:var(--accent2)}
+    .btn{background:var(--accent);color:#fff}.btn:hover{background:var(--accent-2)}
     .btn-ghost{background:transparent;color:var(--fg);border:1px solid var(--border)}
     .btn-del{background:var(--danger);color:#fff}
     table{width:100%;border-collapse:collapse;margin-top:12px}
@@ -24,7 +24,7 @@
     .muted{color:var(--muted)}
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
     select{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:6px}
-    /* Modal */
+    /* modal */
     .modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55)}
     .modal.show{display:grid}
     .card{background:var(--card);border:1px solid var(--border);padding:16px;border-radius:12px;min-width:320px}
@@ -44,8 +44,20 @@
       <button class="btn-ghost" id="btnExport">⬇️ ส่งออก CSV</button>
       <button class="btn-del" id="btnBulkDelete">🗑️ ลบที่เลือก</button>
       <span class="spacer"></span>
-      <input id="search" type="text" placeholder="ค้นหา: id / code / user agent" />
-      <button class="btn-ghost" id="btnTestBackend">🧪 เทส backend</button>
+
+      <!-- ช่องค้นหา: ปิด autofill + spellcheck -->
+      <input
+        id="search"
+        type="search"
+        placeholder="ค้นหา: id / code / user agent"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        enterkeyhint="search"
+      />
+
+      <button class="btn-ghost" id="btnCheckMe">🔎 เทส backend</button>
       <button class="btn-ghost" id="btnResetPw">🔑 รีเซ็ตรหัสผู้ใช้</button>
       <button class="btn-ghost" id="btnLogout">🚪 Logout</button>
     </div>
@@ -53,7 +65,7 @@
     <table id="qrTable" aria-label="รายการ QR Codes">
       <thead>
         <tr>
-          <th style="width:36px"><input type="checkbox" id="checkAll" /></th>
+          <th style="width:36px"><input type="checkbox" id="checkAll"></th>
           <th>ID</th>
           <th>Code</th>
           <th>User Agent</th>
@@ -90,68 +102,30 @@
   </div>
 
 <script>
-/* ---------- CONFIG (ใส่ให้ตรงโปรเจกต์คุณ) ---------- */
-const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // ← ใส่ของจริง
-const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app";
+/* ---------- CONFIG ---------- */
+const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";           // แก้ให้ตรงโปรเจกต์
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // แก้ให้ตรงโปรเจกต์
+const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app";          // ถ้ามี backend ใช้ในปุ่มทดสอบ/รีเซ็ต
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
-/* ---------- utils เรียก backend (รองรับ /api และไม่ /api) ---------- */
-async function getJSON(url, headers={}) {
-  const res = await fetch(url, { headers, cache:'no-store' });
-  let data={}; try{ data = await res.json(); }catch{}
-  if(!res.ok) throw new Error(data?.error || `${res.status} ${res.statusText}`);
-  return data;
-}
-async function postJSON(url, body, headers={}) {
-  const res = await fetch(url, {
-    method:'POST',
-    headers: { 'Content-Type':'application/json', ...headers },
-    body: JSON.stringify(body)
-  });
-  let data={}; try{ data = await res.json(); }catch{}
-  if(!res.ok) throw new Error(data?.error || `${res.status} ${res.statusText}`);
-  return data;
-}
-const PATHS = {
-  health: ['api/health', 'health'],
-  adminMe: ['api/admin-me', 'admin-me'],
-  resetPw: ['api/admin-reset-password', 'admin-reset-password'],
-};
-async function tryGET(base, list, headers={}) {
-  let last;
-  for(const p of list){
-    const url = `${base}/${p}`;
-    try{ return await getJSON(url, headers); }
-    catch(e){ last = `${url} → ${e.message}`; console.warn(last); }
-  }
-  throw new Error(last || 'GET failed');
-}
-async function tryPOST(base, list, body, headers={}) {
-  let last;
-  for(const p of list){
-    const url = `${base}/${p}`;
-    try{ return await postJSON(url, body, headers); }
-    catch(e){ last = `${url} → ${e.message}`; console.warn(last); }
-  }
-  throw new Error(last || 'POST failed');
-}
-
-/* ---------- Elements ---------- */
+/* ---------- ELEMENTS ---------- */
 const tbody = document.getElementById("tbody");
 const btnReload = document.getElementById("btnReload");
 const btnExport = document.getElementById("btnExport");
 const btnBulkDelete = document.getElementById("btnBulkDelete");
 const btnLogout = document.getElementById("btnLogout");
-const btnTestBackend = document.getElementById("btnTestBackend");
+const btnCheckMe = document.getElementById("btnCheckMe");
 const search = document.getElementById("search");
 const checkAll = document.getElementById("checkAll");
 const pageSize = document.getElementById("pageSize");
 const pageInfo = document.getElementById("pageInfo");
 const countLabel = document.getElementById("countLabel");
+const tzFmt = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:'Asia/Bangkok'});
+
+/* Modal elems */
 const modal = document.getElementById("modal");
 const mEmail = document.getElementById("mEmail");
 const mPassword = document.getElementById("mPassword");
@@ -160,32 +134,44 @@ document.getElementById("btnResetPw").onclick = () => { mEmail.value=""; mPasswo
 document.getElementById("mCancel").onclick = () => modal.classList.remove("show");
 document.getElementById("mSubmit").onclick = adminResetPassword;
 
-/* ---------- Gate ---------- */
+/* ---------- SESSION GATE ---------- */
 (async () => {
   const { data:{ session } } = await supabase.auth.getSession();
   if (!session) { window.location.href = "login.html"; return; }
+
+  // กัน autofill: ล้างช่องค้นหาทันที + อีกครั้งหลัง paint
+  search.value = "";
+  setTimeout(() => search.value = "", 0);
+
   loadData();
 })();
 
-/* ---------- Table state/render ---------- */
-const tzFmt = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:'Asia/Bangkok' });
+/* ---------- STATE / RENDER ---------- */
 const st = { raw:[], filtered:[], page:1, pageSize:20 };
-function fmtDate(iso){ const d=new Date(iso); return isNaN(d)? '-' : tzFmt.format(d); }
+function fmtDate(iso){const d = new Date(iso);return isNaN(d)? "-" : tzFmt.format(d);}
+
 function applyFilter(){
-  const q=(search.value||"").trim().toLowerCase();
+  let q=(search.value||"").trim().toLowerCase();
+
+  // กันเคสเบราว์เซอร์ autofill อีเมล -> ตัดทิ้ง
+  if (q.includes('@')) q = "";
+
   st.filtered = st.raw.filter(r=>{
     if(!q) return true;
-    return String(r.id).includes(q) ||
-           String(r.code||"").toLowerCase().includes(q) ||
-           String(r.user_agent||"").toLowerCase().includes(q);
+    return String(r.id).toLowerCase().includes(q)
+        || String(r.code||"").toLowerCase().includes(q)
+        || String(r.user_agent||"").toLowerCase().includes(q);
   });
-  st.page = 1;
+  st.page=1;
 }
-function getPageData(){ const s=(st.page-1)*st.pageSize; return st.filtered.slice(s, s+st.pageSize); }
+
+function getPageData(){const start=(st.page-1)*st.pageSize;return st.filtered.slice(start,start+st.pageSize);}
+
 function render(){
   const rows = getPageData();
-  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="6" class="muted">ไม่มีข้อมูล</td></tr>`; }
-  else{
+  if(rows.length===0){
+    tbody.innerHTML = `<tr><td colspan="6" class="muted">ไม่มีข้อมูล</td></tr>`;
+  }else{
     tbody.innerHTML = "";
     for(const r of rows){
       const tr = document.createElement("tr");
@@ -195,12 +181,11 @@ function render(){
         <td><span>${r.code ?? ""}</span> <button class="btn-ghost" style="margin-left:6px" data-copy="${r.code??""}">คัดลอก</button></td>
         <td class="muted" title="${r.user_agent||""}">${r.user_agent||"-"}</td>
         <td>${fmtDate(r.created_at)}</td>
-        <td class="right"><button class="btn-del" data-del="${r.id}">ลบ</button></td>
-      `;
+        <td class="right"><button class="btn-del" data-del="${r.id}">ลบ</button></td>`;
       tbody.appendChild(tr);
     }
-    tbody.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>navigator.clipboard?.writeText(b.dataset.copy||""));
-    tbody.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>deleteRow(b.dataset.del));
+    tbody.querySelectorAll("[data-copy]").forEach(btn=>btn.onclick=()=>navigator.clipboard?.writeText(btn.dataset.copy||""));
+    tbody.querySelectorAll("[data-del]").forEach(btn=>btn.onclick=()=>deleteRow(btn.dataset.del));
   }
   const total = st.filtered.length;
   const pages = Math.max(1, Math.ceil(total/st.pageSize));
@@ -220,19 +205,20 @@ async function loadData(){
   if(error){ tbody.innerHTML = `<tr><td colspan="6">❌ ${error.message}</td></tr>`; return; }
   st.raw = data||[]; applyFilter(); render();
 }
+
 async function deleteRow(id){
   if(!confirm(`ลบรายการนี้หรือไม่? (${id})`)) return;
   const { error } = await supabase.from("qrcodes").delete().eq("id", id);
   if(error){ alert("❌ "+error.message); return; }
-  st.raw = st.raw.filter(x=> String(x.id)!==String(id));
+  st.raw = st.raw.filter(x=>String(x.id)!==String(id));
   applyFilter(); render();
 }
 
-/* ---------- Export / UI ---------- */
+/* ---------- EXPORT / UI EVENTS ---------- */
 btnExport.onclick = ()=>{
   const headers = ["id","code","user_agent","created_at(ISO)","created_at(ICT)"];
   const lines=[headers.join(",")];
-  const esc=s=> s==null? "" : /[",\n]/.test(String(s))? `"${String(s).replace(/"/g,'""')}"` : String(s);
+  const esc = s => s==null? "" : /[",\n]/.test(String(s)) ? `"${String(s).replace(/"/g,'""')}"` : String(s);
   for(const r of st.filtered){
     lines.push([esc(r.id),esc(r.code??""),esc(r.user_agent??""),esc(r.created_at??""),esc(fmtDate(r.created_at))].join(","));
   }
@@ -242,11 +228,18 @@ btnExport.onclick = ()=>{
   document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 };
 btnReload.onclick = loadData;
-search.oninput = ()=>{ applyFilter(); render(); };
+
+// ⬇️ ใช้ keyup/search แทน oninput เพื่อเลี่ยง autofill
+search.addEventListener('keyup', e => {
+  if (!e.isTrusted) return; // event จากผู้ใช้เท่านั้น
+  applyFilter(); render();
+});
+search.addEventListener('search', () => { applyFilter(); render(); });
+
 pageSize.onchange = ()=>{ st.pageSize=parseInt(pageSize.value,10); render(); };
 checkAll.onchange = ()=>{ document.querySelectorAll(".rowcheck").forEach(cb=> cb.checked = checkAll.checked); };
 btnBulkDelete.onclick = async ()=>{
-  const ids=[...document.querySelectorAll(".rowcheck:checked")].map(cb=>cb.value);
+  const ids = [...document.querySelectorAll(".rowcheck:checked")].map(cb=>cb.value);
   if(ids.length===0) return alert("ยังไม่ได้เลือกรายการ");
   if(!confirm(`ลบ ${ids.length} รายการ?`)) return;
   const { error } = await supabase.from("qrcodes").delete().in("id", ids);
@@ -256,21 +249,20 @@ btnBulkDelete.onclick = async ()=>{
 };
 btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
 
-/* ---------- Backend: test / reset password ---------- */
-btnTestBackend.onclick = async ()=>{
+/* ---------- TEST BACKEND (optional) ---------- */
+btnCheckMe.onclick = async ()=>{
   const { data:{ session } } = await supabase.auth.getSession();
   if(!session){ alert("ยังไม่ได้ล็อกอิน"); return; }
   try{
-    // health ก่อน
-    const health = await tryGET(BACKEND_BASE, PATHS.health);
-    // me ต่อ
-    const me = await tryGET(BACKEND_BASE, PATHS.adminMe, { Authorization:'Bearer '+session.access_token });
-    alert(`health: ${JSON.stringify(health)}\n\nme: ${JSON.stringify(me,null,2)}`);
+    const r = await fetch(`${BACKEND_BASE}/admin/me`, { headers: { Authorization: "Bearer " + session.access_token }});
+    const j = await r.json();
+    alert(`${r.status} ${r.ok?"OK":"ERR"}\n` + JSON.stringify(j,null,2));
   }catch(e){
     alert("fetch error: " + e.message);
   }
 };
 
+/* ---------- ADMIN RESET PASSWORD (via backend) ---------- */
 async function adminResetPassword(){
   const email = mEmail.value.trim();
   const pw = mPassword.value;
@@ -279,16 +271,18 @@ async function adminResetPassword(){
   if(!session){ window.location.href="login.html"; return; }
   mMsg.textContent = "กำลังส่งคำสั่ง...";
   try{
-    const out = await tryPOST(
-      BACKEND_BASE,
-      PATHS.resetPw,
-      { email, new_password: pw },
-      { Authorization: "Bearer "+session.access_token }
-    );
+    const res = await fetch(`${BACKEND_BASE}/admin/reset-password`,{
+      method:"POST",
+      headers:{ "Content-Type":"application/json","Authorization":"Bearer "+session.access_token },
+      body: JSON.stringify({ email, new_password: pw })
+    });
+    const out = await res.json().catch(()=> ({}));
+    if(!res.ok){ mMsg.textContent = "❌ " + (out.error || JSON.stringify(out)); return; }
     mMsg.textContent = "✅ " + (out.message || "สำเร็จ");
     setTimeout(()=> modal.classList.remove("show"), 800);
-  }catch(e){
-    mMsg.textContent = "❌ " + e.message;
+  }catch(err){
+    console.error("reset-password fetch error:", err);
+    mMsg.textContent = "❌ network error: " + err.message;
   }
 }
 </script>
