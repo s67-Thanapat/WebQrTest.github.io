@@ -117,7 +117,7 @@
       colorLight: "#ffffff",  // ✅ พื้นหลัง + Quiet Zone = ขาว
       margin: QUIET_MARGIN    // ✅ ความกว้าง Quiet Zone (หน่วย = โมดูล)
     });
-    sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px (กรอบขาว ${QUIET_MARGIN} โมดูล + กรอบนอก ${getComputedStyle(document.documentElement).getPropertyValue('--frame').trim()})`;
+    sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
   }
 
   // ส่งขึ้น Supabase (REST)
