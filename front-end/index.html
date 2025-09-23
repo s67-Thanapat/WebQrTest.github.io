@@ -16,11 +16,16 @@
     .size{color:var(--muted); font-weight:700; letter-spacing:.2px; text-align:center;}
     .qr-box{
       display:flex; align-items:center; justify-content:center;
-      background:var(--card); padding:18px; border-radius:22px; box-shadow:var(--shadow);
-      width:min(78vw, 360px); height:min(78vw, 360px);
+      background:#ffffff;          /* ✅ กรอบรอบ QR เป็นสีขาว */
+      padding:0;                   /* ไม่มีพื้นที่ดำ */
+      border-radius:16px;          /* มุมโค้ง */
+      box-shadow:var(--shadow);    /* เงาสวยๆ */
     }
     #qrCanvas canvas, #qrCanvas img{
-      width:100%; height:100%; border-radius:16px; background:#fff; display:block;
+      width:100%; height:100%;
+      background:#fff;             /* ✅ พื้นหลัง + Quiet zone = ขาว */
+      display:block;
+      border-radius:16px;
     }
     .uuid{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.95rem; color:var(--muted);
       word-break:break-all; text-align:center; }
@@ -55,7 +60,7 @@
 
   const PERIOD_MS = 30_000;  // เปลี่ยนทุก 30 วิ
   const QR_PX = 512;         // ขนาดรูป
-  const QUIET_MARGIN = 4;    // ✅ Quiet Zone (หน่วย = โมดูล) มาตรฐานแนะนำ 4
+  const QUIET_MARGIN = 4;    // ✅ Quiet Zone (มาตรฐาน 4 modules)
 
   // ==== อ้างอิง DOM ====
   const sizeLabel = document.getElementById('sizeLabel');
@@ -66,7 +71,7 @@
   let nextAt = null;
   let ticker = null;
 
-  // สร้างรหัสแบบอ่านง่าย (ไม่มี 0/O/I/1)
+  // สร้างรหัสแบบอ่านง่าย
   function shortId(len){
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const arr = new Uint32Array(len);
@@ -82,14 +87,14 @@
       width: QR_PX,
       height: QR_PX,
       correctLevel: QRCode.CorrectLevel.M,
-      colorDark: "#000000",
-      colorLight: "#ffffff",
-      margin: QUIET_MARGIN // ✅ เพิ่ม Quiet Zone รอบๆ ตามจำนวนโมดูล
+      colorDark: "#000000",   // จุด QR
+      colorLight: "#ffffff",  // ✅ Quiet Zone + พื้นหลัง = ขาว
+      margin: QUIET_MARGIN
     });
     sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
   }
 
-  // ส่งขึ้น Supabase (REST)
+  // ส่งขึ้น Supabase
   async function sendToSupabase(code){
     if (!supabase) return;
     const payload = [{ uuid: code, user_agent: navigator.userAgent }];
@@ -114,7 +119,7 @@
     nextAt = Date.now() + PERIOD_MS;
   }
 
-  // ตัวนับถอยหลังและเปลี่ยนอัตโนมัติ
+  // ตัวนับถอยหลัง
   function startTicker(){
     if (ticker) clearInterval(ticker);
     ticker = setInterval(()=>{
