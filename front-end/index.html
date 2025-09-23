@@ -48,13 +48,16 @@
 
 <script>
 (function(){
+  // ==== ตั้งค่า ====
   const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
   const supabase = window.supabase.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const PERIOD_MS = 30_000;
-  const QR_PX = 512;
+  const PERIOD_MS = 30_000;  // เปลี่ยนทุก 30 วิ
+  const QR_PX = 512;         // ขนาดรูป
+  const QUIET_MARGIN = 4;    // ✅ Quiet Zone (หน่วย = โมดูล) มาตรฐานแนะนำ 4
 
+  // ==== อ้างอิง DOM ====
   const sizeLabel = document.getElementById('sizeLabel');
   const uuidText  = document.getElementById('uuidText');
   const countEl   = document.getElementById('count');
@@ -63,6 +66,7 @@
   let nextAt = null;
   let ticker = null;
 
+  // สร้างรหัสแบบอ่านง่าย (ไม่มี 0/O/I/1)
   function shortId(len){
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const arr = new Uint32Array(len);
@@ -70,6 +74,7 @@
     return Array.from(arr).map(v => alphabet[v % alphabet.length]).join('');
   }
 
+  // วาด QR + Quiet Zone
   function drawQR(text){
     qrBox.innerHTML = '';
     new QRCode(qrBox, {
@@ -78,11 +83,13 @@
       height: QR_PX,
       correctLevel: QRCode.CorrectLevel.M,
       colorDark: "#000000",
-      colorLight: "#ffffff"
+      colorLight: "#ffffff",
+      margin: QUIET_MARGIN // ✅ เพิ่ม Quiet Zone รอบๆ ตามจำนวนโมดูล
     });
     sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
   }
 
+  // ส่งขึ้น Supabase (REST)
   async function sendToSupabase(code){
     if (!supabase) return;
     const payload = [{ uuid: code, user_agent: navigator.userAgent }];
@@ -98,6 +105,7 @@
     });
   }
 
+  // สร้าง QR ใหม่
   async function generateQR(){
     const code = shortId(12);
     uuidText.textContent = code;
@@ -106,6 +114,7 @@
     nextAt = Date.now() + PERIOD_MS;
   }
 
+  // ตัวนับถอยหลังและเปลี่ยนอัตโนมัติ
   function startTicker(){
     if (ticker) clearInterval(ticker);
     ticker = setInterval(()=>{
@@ -117,6 +126,7 @@
     }, 250);
   }
 
+  // เริ่มทำงาน
   generateQR();
   startTicker();
 })();
