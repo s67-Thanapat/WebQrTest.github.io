@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>QR สุ่มอัตโนมัติ</title>
   <style>
-    :root{ --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --card:#111318; --shadow:0 8px 32px rgba(0,0,0,.45); }
+    :root{
+      --bg:#0b0c10;        /* พื้นหลังหน้า (ดำ) */
+      --fg:#e5e7eb;
+      --muted:#9ca3af;
+      --shadow:0 8px 32px rgba(0,0,0,.45);
+      --qr-size: 512px;    /* ✅ ขนาดตัวภาพ QR (ไม่รวมกรอบ) */
+      --frame: 20px;       /* ✅ ความหนากรอบสีขาวรอบ QR */
+      --radius: 16px;      /* มุมโค้งกรอบ */
+    }
     body{
       margin:0; background:var(--bg); color:var(--fg);
       font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
@@ -14,27 +22,40 @@
     }
     .title{font-weight:800; letter-spacing:.2px; text-align:center; margin:0;}
     .size{color:var(--muted); font-weight:700; letter-spacing:.2px; text-align:center;}
-    .qr-box{
-      display:flex; align-items:center; justify-content:center;
-      background:#ffffff;          /* ✅ กรอบรอบ QR เป็นสีขาว */
-      padding:0;                   /* ไม่มีพื้นที่ดำ */
-      border-radius:16px;          /* มุมโค้ง */
-      box-shadow:var(--shadow);    /* เงาสวยๆ */
+
+    /* ✅ กรอบสีขาวรอบ QR */
+    .qr-frame{
+      background:#ffffff;                 /* กรอบสีขาว */
+      padding:var(--frame);               /* ความหนากรอบ */
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      display:inline-block;
     }
+
+    /* กล่องสำหรับวาง QR (ขนาดพอดีกับ --qr-size) */
+    .qr-box{
+      width:var(--qr-size);
+      height:var(--qr-size);
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* ตัวแคนวาส/รูปของ lib qrcodejs */
     #qrCanvas canvas, #qrCanvas img{
       width:100%; height:100%;
-      background:#fff;             /* ✅ พื้นหลัง + Quiet zone = ขาว */
+      background:#fff;                    /* ✅ พื้นหลัง + Quiet Zone = ขาว */
       display:block;
-      border-radius:16px;
+      border-radius:calc(var(--radius) - 6px);
     }
-    .uuid{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.95rem; color:var(--muted);
-      word-break:break-all; text-align:center; }
+
+    .uuid{
+      font-family:ui-monospace,Menlo,Consolas,monospace;
+      font-size:.95rem; color:var(--muted);
+      word-break:break-all; text-align:center;
+    }
     .countdown{ font-weight:800; letter-spacing:.2px; }
-    .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-      padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.85); color:#fff; z-index:9999; }
   </style>
 
-  <!-- ✅ qrcodejs -->
+  <!-- qrcodejs + supabase -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -43,10 +64,15 @@
   <h1 class="title" style="color:#FF0000;">*สำคัญห้ามหาย*</h1>
 
   <div id="sizeLabel" class="size">ขนาด: —</div>
-  <div class="qr-box"><div id="qrCanvas" aria-label="QR"></div></div>
+
+  <!-- ✅ กรอบขาวครอบ QR -->
+  <div class="qr-frame">
+    <div class="qr-box"><div id="qrCanvas" aria-label="QR"></div></div>
+  </div>
+
   <div class="uuid" id="uuidText">—</div>
 
-  <!-- 🔔 ตัวนับถอยหลัง -->
+  <!-- ตัวนับถอยหลัง -->
   <div class="countdown" aria-live="polite">
     สุ่มใหม่ใน: <span id="count">—</span> วินาที
   </div>
@@ -58,9 +84,9 @@
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
   const supabase = window.supabase.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const PERIOD_MS = 30_000;  // เปลี่ยนทุก 30 วิ
-  const QR_PX = 512;         // ขนาดรูป
-  const QUIET_MARGIN = 4;    // ✅ Quiet Zone (มาตรฐาน 4 modules)
+  const PERIOD_MS = 30_000;              // เปลี่ยนทุก 30 วิ
+  const QR_PX = 512;                     // ✅ ต้องตรงกับ --qr-size
+  const QUIET_MARGIN = 4;                // ✅ Quiet Zone = 4 โมดูล (มาตรฐาน)
 
   // ==== อ้างอิง DOM ====
   const sizeLabel = document.getElementById('sizeLabel');
@@ -71,7 +97,7 @@
   let nextAt = null;
   let ticker = null;
 
-  // สร้างรหัสแบบอ่านง่าย
+  // รหัสอ่านง่าย (ตัด 0/O/I/1 ออก)
   function shortId(len){
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const arr = new Uint32Array(len);
@@ -79,7 +105,7 @@
     return Array.from(arr).map(v => alphabet[v % alphabet.length]).join('');
   }
 
-  // วาด QR + Quiet Zone
+  // วาด QR + Quiet Zone สีขาว
   function drawQR(text){
     qrBox.innerHTML = '';
     new QRCode(qrBox, {
@@ -88,13 +114,13 @@
       height: QR_PX,
       correctLevel: QRCode.CorrectLevel.M,
       colorDark: "#000000",   // จุด QR
-      colorLight: "#ffffff",  // ✅ Quiet Zone + พื้นหลัง = ขาว
-      margin: QUIET_MARGIN
+      colorLight: "#ffffff",  // ✅ พื้นหลัง + Quiet Zone = ขาว
+      margin: QUIET_MARGIN    // ✅ ความกว้าง Quiet Zone (หน่วย = โมดูล)
     });
-    sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
+    sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px (กรอบขาว ${QUIET_MARGIN} โมดูล + กรอบนอก ${getComputedStyle(document.documentElement).getPropertyValue('--frame').trim()})`;
   }
 
-  // ส่งขึ้น Supabase
+  // ส่งขึ้น Supabase (REST)
   async function sendToSupabase(code){
     if (!supabase) return;
     const payload = [{ uuid: code, user_agent: navigator.userAgent }];
