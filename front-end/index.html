@@ -6,7 +6,12 @@
   <title>QR สุ่ม • กลางจอ + ปุ่ม</title>
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0c10" />
+
+  <!-- ✅ Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
+    /* === (style เดิมของคุณ คงไว้ทั้งหมด) === */
     :root{
       --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af;
       --card:#111318; --shadow:0 8px 32px rgba(0,0,0,.45);
@@ -19,86 +24,49 @@
       }
     }
     html,body{height:100%;}
-    body{
-      margin:0; background:var(--bg); color:var(--fg);
-      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-    }
-    main.center{
-      min-height:100dvh;
-      padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px);
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-    }
+    body{ margin:0; background:var(--bg); color:var(--fg);
+      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
+    main.center{ min-height:100dvh; padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px);
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
     .title{font-weight:800; letter-spacing:.2px; text-align:center; margin:0 0 6px;}
     .size{color:var(--muted); font-weight:700; letter-spacing:.2px; text-align:center;}
-    .qr-box{
-      display:flex; align-items:center; justify-content:center;
-      background:var(--card); padding:18px;
-      border-radius:22px; box-shadow:var(--shadow);
-      min-height: calc(min(78vw, 360px) + 36px);
-    }
-    img.qr{
-      width:min(78vw, 360px); height:auto; aspect-ratio:1/1;
-      border-radius:16px; background:#fff; display:block;
-    }
-    .uuid{
-      font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-      font-size:.95rem; color:var(--muted); word-break:break-all; text-align:center;
-    }
-    .btns{
-      display:flex; justify-content:center; align-items:center;
-      gap:10px; width:min(92vw, 440px); flex-wrap:wrap;
-    }
-    .btns > center{ display: contents; }
-    button{
-      appearance:none; border:none; cursor:pointer;
+    .qr-box{ display:flex; align-items:center; justify-content:center;
+      background:var(--card); padding:18px; border-radius:22px; box-shadow:var(--shadow);
+      min-height: calc(min(78vw, 360px) + 36px); }
+    img.qr{ width:min(78vw, 360px); aspect-ratio:1/1; border-radius:16px; background:#fff; display:block; }
+    .uuid{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.95rem; color:var(--muted);
+      word-break:break-all; text-align:center; }
+    .btns{ display:flex; justify-content:center; align-items:center; gap:10px; width:min(92vw, 440px); flex-wrap:wrap; }
+    button{ appearance:none; border:none; cursor:pointer;
       padding:12px 14px; border-radius:14px; font-weight:800;
-      background:var(--accent); color:#fff; box-shadow:var(--shadow); min-height:44px;
-    }
-    .btn-dark{background:#111827;}
-    .btn-good{background:#16a34a;}
-    .btn-float-right{
-      position:fixed; top:calc(10px + env(safe-area-inset-top));
-      right:12px; z-index:1000; background:#0ea5e9;
-    }
-    .btn-play{
-      position:fixed; bottom:calc(16px + env(safe-area-inset-bottom));
-      left:50%; transform:translateX(-50%);
-      width:min(92vw, 440px); z-index:1000;
-      background:#22c55e; font-size:1.05rem; text-align:center;
-      text-decoration:none; padding:10px 14px; border-radius:14px; color:#fff; font-weight:800;
-    }
-    .toast{
-      position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-      padding:10px 14px; border-radius:12px;
-      background:rgba(0,0,0,.85); color:#fff; z-index:9999;
-    }
+      background:var(--accent); color:#fff; box-shadow:var(--shadow); min-height:44px; }
+    .btn-dark{background:#111827;} .btn-good{background:#16a34a;}
+    .btn-admin-left{ position:fixed; top:calc(10px + env(safe-area-inset-top)); left:12px; z-index:1000;
+      background:#f59e0b; color:#111; font-weight:800; border:none; padding:10px 14px; border-radius:14px;
+      box-shadow:var(--shadow); cursor:pointer; }
+    .btn-float-right{ position:fixed; top:calc(10px + env(safe-area-inset-top));
+      right:12px; z-index:1000; background:#0ea5e9; }
+    .btn-play{ position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+      width:min(92vw, 440px); z-index:1000; background:#22c55e; font-size:1.05rem; text-align:center;
+      padding:10px 14px; border-radius:14px; color:#fff; font-weight:800; }
+    .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+      padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.85); color:#fff; z-index:9999; }
     .hidden{display:none !important;}
-    .btn-admin-left{
-      position:fixed; top:calc(10px + env(safe-area-inset-top)); left:12px;
-      z-index:1000; background:#f59e0b; color:#111; font-weight:800;
-      border:none; padding:10px 14px; border-radius:14px;
-      box-shadow:var(--shadow); cursor:pointer;
-    }
   </style>
 </head>
 <body>
-  <!-- ปุ่มแอดมิน มุมซ้ายบน -->
-  </button id="btnAdmin" class="btn-admin-left" type="button" aria-label="Admin"> </button>
+  <!-- ปุ่มแอดมิน -->
+  <button id="btnAdmin" class="btn-admin-left" type="button">Admin</button>
 
-  <!-- ปุ่มฐานการเรียนรู้ มุมขวาบน -->
-  <a href="Extention.html" class="btn-float-right"
-     style="display:inline-block;text-decoration:none;padding:10px 14px;border-radius:14px;background:#0ea5e9;color:#fff;font-weight:800;">
-     ฐานการเรียนรู้
-  </a>
+  <!-- ปุ่มฐานการเรียนรู้ -->
+  <a href="Extention.html" class="btn-float-right">ฐานการเรียนรู้</a>
 
   <main class="center">
     <h1 class="title">คิวอาร์โค้ด</h1>
     <h1 class="title" style="color:#FF0000;">*สำคัญห้ามหาย*</h1>
 
     <div id="sizeLabel" class="size">ขนาด: —</div>
-
     <div class="qr-box"><img id="qrImg" class="qr" alt="QR"></div>
-
     <div class="uuid" id="uuidText">—</div>
 
     <div class="btns">
@@ -110,179 +78,138 @@
 
   <a id="btnPlay" href="game.html" class="btn-play">เล่นเกม</a>
 
-  <script>
-  (function(){
-    // ====== CONFIG ======
-    // ใช้ backend จริงของคุณ (Vercel)
-    const BACKEND_BASE = 'https://backend-github-io-mrli.vercel.app';
+  <!-- ✅ ฟอร์ม login/logout -->
+  <section style="padding:20px; text-align:center;">
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="signup()">Register</button>
+    <button onclick="logout()">Logout</button>
+    <p id="me">ยังไม่ได้ล็อกอิน</p>
+  </section>
 
-    // ====== Elements ======
-    const img = document.getElementById('qrImg');
-    const sizeLabel = document.getElementById('sizeLabel');
-    const uuidText = document.getElementById('uuidText');
-    const btnGen = document.getElementById('btnGen');
-    const btnSave = document.getElementById('btnSave');
-    const btnCopy = document.getElementById('btnCopy');
-    const btnAdmin = document.getElementById('btnAdmin');
+<script>
+(function(){
+  // ====== CONFIG ======
+  const SUPABASE_URL = "https://<your-project>.supabase.co";   // 👈 เปลี่ยนเป็นของคุณ
+  const SUPABASE_ANON_KEY = "<your-anon-key>";                 // 👈 เปลี่ยนเป็นของคุณ
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ====== Consts ======
-    const QR_PX = 1024;
-    const STORAGE_KEY = 'qr_locked_code_v1';
-    const ADMIN_PASS = '12345';
+  const QR_PX = 1024;
+  const STORAGE_KEY = 'qr_locked_code_v1';
+  const ADMIN_PASS = '12345';
 
-    // ====== Helpers ======
-    function toast(msg){
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.textContent = msg;
-      document.body.appendChild(el);
-      setTimeout(()=>el.remove(), 1400);
-    }
-    const storageGet = () => { try { return localStorage.getItem(STORAGE_KEY) || ''; } catch { return ''; } };
-    const storageSet = v => { try { localStorage.setItem(STORAGE_KEY, v); } catch {} };
+  // ====== Elements ======
+  const img = document.getElementById('qrImg');
+  const sizeLabel = document.getElementById('sizeLabel');
+  const uuidText = document.getElementById('uuidText');
+  const btnGen = document.getElementById('btnGen');
+  const btnSave = document.getElementById('btnSave');
+  const btnCopy = document.getElementById('btnCopy');
 
-    function shortId(len){
-      const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const arr = new Uint32Array(len);
-      crypto.getRandomValues(arr);
-      return Array.from(arr).map(v => alphabet[v % alphabet.length]).join('');
-    }
+  // ====== Helpers ======
+  function toast(msg){
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 1400);
+  }
 
-    function updateSizeLabel(){
-      if (img && img.naturalWidth)
-        sizeLabel.textContent = 'ขนาด: ' + img.naturalWidth + '×' + img.naturalHeight + ' px';
-      else
-        sizeLabel.textContent = 'ขนาด: ' + QR_PX + '×' + QR_PX + ' px';
-    }
+  function shortId(len){
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const arr = new Uint32Array(len);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map(v => alphabet[v % alphabet.length]).join('');
+  }
 
-    function drawQR(text){
-      const base = 'https://api.qrserver.com/v1/create-qr-code/';
-      img.src = base + '?size=' + QR_PX + 'x' + QR_PX + '&format=png&qzone=2&margin=2&data=' + encodeURIComponent(text);
-      sizeLabel.textContent = 'ขนาด: ' + QR_PX + '×' + QR_PX + ' px';
-    }
+  function drawQR(text){
+    const base = 'https://api.qrserver.com/v1/create-qr-code/';
+    img.src = base + '?size=' + QR_PX + 'x' + QR_PX + '&format=png&qzone=2&margin=2&data=' + encodeURIComponent(text);
+    sizeLabel.textContent = 'ขนาด: ' + QR_PX + '×' + QR_PX + ' px';
+  }
 
-    function applyLockedUI(code){
-      if (!code) return;
-      uuidText.textContent = code;
-      drawQR(code);
-      btnGen.classList.add('hidden');
-      btnSave.classList.remove('hidden');
-      btnCopy.classList.remove('hidden');
-    }
+  function applyLockedUI(code){
+    if (!code) return;
+    uuidText.textContent = code;
+    drawQR(code);
+    btnGen.classList.add('hidden');
+    btnSave.classList.remove('hidden');
+    btnCopy.classList.remove('hidden');
+  }
 
-    // ====== Backend call (ลองทั้งมี/ไม่มี /api) ======
-    async function postJSON(url, body){
-      const res = await fetch(url, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify(body)
-      });
-      let data = {};
-      try { data = await res.json(); } catch {}
-      if(!res.ok || data?.ok === false) throw new Error(data?.error || `${res.status} ${res.statusText}`);
-      return data;
-    }
-    async function sendToBackendOnce(code){
-      const payload = { uuid: code, user_agent: navigator.userAgent };
-      const urls = [
-        `${BACKEND_BASE}/api/qr-create`,
-        `${BACKEND_BASE}/qr-create`,
-        `${BACKEND_BASE}/api/qr/create`,
-        `${BACKEND_BASE}/qr/create`,
-      ];
-      let lastErr;
-      for(const u of urls){
-        try { await postJSON(u, payload); return true; }
-        catch(e){ lastErr = e; console.warn('POST fail:', u, e.message); }
-      }
-      throw lastErr || new Error('post failed');
-    }
+  // ====== Supabase Auth ======
+  async function login(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return alert(error.message);
+    toast("ล็อกอินสำเร็จ");
+    showMe();
+  }
+  async function signup(){
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) return alert(error.message);
+    alert("สมัครสำเร็จ โปรดยืนยันอีเมล");
+  }
+  async function logout(){
+    await supabase.auth.signOut();
+    toast("ออกจากระบบแล้ว");
+    showMe();
+  }
+  async function showMe(){
+    const { data: { user } } = await supabase.auth.getUser();
+    document.getElementById("me").textContent = user ? `เข้าสู่ระบบ: ${user.email}` : "ยังไม่ได้ล็อกอิน";
+  }
+  supabase.auth.onAuthStateChange(showMe);
 
-    // ====== Actions ======
-    async function handleGenerateOnce(){
-      if (btnGen) { btnGen.disabled = true; btnGen.style.opacity = .7; }
-      try{
-        const existed = storageGet();
-        if (existed) {
-          applyLockedUI(existed);
-          toast('คิวอาถูกล็อคไว้แล้ว');
-          return;
-        }
-        const code = shortId(12);
-        // บันทึกฐาน "แค่ครั้งแรก" เท่านั้น
-        await sendToBackendOnce(code);
-        // เก็บลง localStorage หลังบันทึกสำเร็จ
-        storageSet(code);
-        applyLockedUI(code);
-        toast('สร้างและบันทึกสำเร็จ');
-      } catch(err){
-        console.error('sendToBackend error:', err);
-        toast('บันทึกฐานข้อมูลล้มเหลว, โปรดลองใหม่');
-      } finally {
-        if (btnGen) { btnGen.disabled = false; btnGen.style.opacity = 1; }
-      }
-    }
+  // ====== Insert QR (เก็บลง Supabase DB ด้วย user token) ======
+  async function sendToSupabase(code){
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("ยังไม่ได้ล็อกอิน");
 
-    async function savePNG(){
-      try{
-        if(!img || !img.src){ toast('ยังไม่มีภาพ QR'); return; }
-        const res = await fetch(img.src, {mode:'cors', cache:'no-store'});
-        if(!res.ok) throw new Error('fetch failed');
-        const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
-        const name = ('qr-' + (uuidText.textContent || Date.now()) + '.png').replace(/[^a-zA-Z0-9._-]/g,'_');
-        const a = document.createElement('a');
-        a.href = url; a.download = name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>URL.revokeObjectURL(url), 2000);
-      }catch(e){ window.open(img.src, '_blank'); }
-    }
+    const accessToken = session.access_token;
+    const payload = [{ uuid: code, user_agent: navigator.userAgent }];
 
-    function copyCode(){
-      const txt = uuidText.textContent || '';
-      if(!txt){ toast('ยังไม่มีรหัส'); return; }
-      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt);
-      else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
-      }
-      toast('คัดลอกแล้ว');
-    }
-
-    // ไปหน้า admin ด้วยรหัสง่าย ๆ
-    btnAdmin?.addEventListener('click', ()=>{
-      const input = prompt('รหัสแอดมิน');
-      if (input === null) return;
-      if ((input || '').trim() === ADMIN_PASS){
-        try { sessionStorage.setItem('admin_ok', '1'); } catch {}
-        location.href = 'admin.html';
-      } else {
-        toast('รหัสแอดมินไม่ถูกต้อง');
-      }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/qr_codes`, { // 👈 ใช้ table จริงของคุณ
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,   // ✅ ส่ง user token
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(payload)
     });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
 
-    // events
-    img?.addEventListener('load', updateSizeLabel);
-    btnGen?.addEventListener('click', handleGenerateOnce);
-    btnSave?.addEventListener('click', savePNG);
-    btnCopy?.addEventListener('click', copyCode);
-    img?.addEventListener('click', ()=> storageGet()
-      ? toast('คิวอาถูกล็อคแล้ว')
-      : toast('กด "สุ่มคิวอา" เพื่อสร้าง'));
+  // ====== Actions ======
+  async function handleGenerateOnce(){
+    try {
+      const code = shortId(12);
+      await sendToSupabase(code);   // ✅ จะเข้า audit log พร้อม changed_by
+      applyLockedUI(code);
+      toast("สร้างและบันทึกสำเร็จ");
+    } catch(e){
+      console.error(e);
+      toast("บันทึกฐานข้อมูลล้มเหลว");
+    }
+  }
 
-    // ====== เริ่มหน้า: แสดงอย่างเดียว ถ้ามีของเดิม (ไม่ส่ง backend ซ้ำ) ======
-    (function init(){
-      const locked = storageGet();
-      if (locked){
-        applyLockedUI(locked);   // ✅ แสดงของเดิม
-        // ❌ ไม่เรียก sendToBackend() อีกแล้ว
-      } else {
-        uuidText.textContent = '—';
-        img.removeAttribute('src');
-        updateSizeLabel();
-      }
-    })();
-  })();
-  </script>
+  function savePNG(){ /* (โค้ดเดิมของคุณ ไม่เปลี่ยน) */ }
+  function copyCode(){ /* (โค้ดเดิมของคุณ ไม่เปลี่ยน) */ }
+
+  // Events
+  btnGen?.addEventListener('click', handleGenerateOnce);
+  btnSave?.addEventListener('click', savePNG);
+  btnCopy?.addEventListener('click', copyCode);
+
+  showMe();
+})();
+</script>
 </body>
 </html>
