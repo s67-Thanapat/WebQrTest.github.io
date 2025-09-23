@@ -99,17 +99,9 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
 });
 
-/* ✅ ตั้งค่า backend ของคุณ (ใช้สำหรับรีเซ็ตรหัสผ่านฝั่งเซิร์ฟเวอร์ด้วย service key) */
-const BACKEND_BASE = "https://backend-github-io-mrli.vercel.app"; // เช่น "http://localhost:8000" ถ้าไม่มีปล่อยว่าง ระบบจะ alert บอก
-
-/* ✅ Mapping ชื่อตาราง/คอลัมน์ให้แก้ง่ายเมื่อ editor เปลี่ยน */
-const TABLE = "qr_codes";   // เดิมใช้ "qrcodes" ถ้าคุณเปลี่ยน เช่น "qr_items" ให้แก้ตรงนี้
-const COLS = {
-  id: "id",                // ถ้า primary key เป็นชื่ออื่น เช่น "row_id" ให้แก้ตรงนี้
-  code: "uuid",            // ถ้าเปลี่ยนเป็น "qr_code" ให้แก้เป็น "qr_code"
-  ua: "user_agent",        // ถ้าเปลี่ยนเป็น "ua" ให้แก้เป็น "ua"
-  createdAt: "created_at"
-};
+/* ✅ ชื่อตาราง/คอลัมน์ */
+const TABLE = "qr_codes";
+const COLS = { id:"id", code:"uuid", ua:"user_agent", createdAt:"created_at" };
 
 /* ---------- ELEMENTS ---------- */
 const tbody = document.getElementById("tbody");
@@ -139,8 +131,7 @@ document.getElementById("mSubmit").onclick = adminResetPassword;
 (async () => {
   const { data:{ session } } = await supabase.auth.getSession();
   if (!session) { window.location.href = "login.html"; return; }
-  search.value = "";
-  setTimeout(() => search.value = "", 0);
+  search.value = ""; setTimeout(() => search.value = "", 0);
   loadData();
 })();
 
@@ -149,7 +140,7 @@ const st = { raw:[], filtered:[], page:1, pageSize:20 };
 function fmtDate(iso){const d = new Date(iso);return isNaN(d)? "-" : tzFmt.format(d);}
 function applyFilter(){
   let q=(search.value||"").trim().toLowerCase();
-  if (q.includes('@')) q = ""; // กัน search email เผลอไปชน RLS/policy
+  if (q.includes('@')) q = "";
   st.filtered = st.raw.filter(r=>{
     if(!q) return true;
     return String(r[COLS.id]).toLowerCase().includes(q)
@@ -214,7 +205,6 @@ function toCsvValue(v){
   return s;
 }
 btnExport.onclick = ()=>{
-  // ใช้รายการที่กำลังแสดงผล (filtered) เพื่อให้สอดคล้องกับการค้นหา
   const rows = st.filtered.map(r=>({
     id: r[COLS.id],
     code: r[COLS.code] ?? "",
@@ -230,12 +220,8 @@ btnExport.onclick = ()=>{
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const dt = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
-  a.href = url;
-  a.download = `qrcodes-${dt}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = `qrcodes-${dt}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 };
 
 /* ---------- ลบหลายรายการ ---------- */
@@ -246,8 +232,7 @@ btnBulkDelete.onclick = async ()=>{
   const { error } = await supabase.from(TABLE).delete().in(COLS.id, ids);
   if (error) { alert("❌ "+error.message); return; }
   st.raw = st.raw.filter(x=>!ids.includes(String(x[COLS.id])));
-  checkAll.checked = false;
-  applyFilter(); render();
+  checkAll.checked = false; applyFilter(); render();
 };
 
 /* ---------- UI EVENTS ---------- */
@@ -263,52 +248,35 @@ btnLogs.onclick = async () => {
   const { data:{ session } } = await supabase.auth.getSession();
   if (!session) { alert("กรุณาล็อกอินก่อน"); return; }
   const userId = session.user.id;
+
   const { data, error } = await supabase
     .from("profiles")
     .select("is_admin")
     .eq("id", userId)
-    .single();
+    .maybeSingle();  // ✅ ปลอดภัยกว่า single()
+
   if (error) { alert("เช็คสิทธิ์ไม่สำเร็จ: " + error.message); return; }
-  if (data?.is_admin) {
+  if (!data) { alert("❌ ยังไม่มีโปรไฟล์ของผู้ใช้นี้ในระบบ"); return; }
+
+  if (data.is_admin) {
     window.location.href = "logs.html";
   } else {
     alert("❌ คุณไม่มีสิทธิ์เข้า Logs (Admin เท่านั้น)");
   }
 };
 
-/* ---------- ADMIN RESET PASSWORD (ผ่าน backend) ----------
-   จำเป็นต้องมี backend endpoint ที่ใช้ service role ทำงานจริง
-   ตัวอย่าง POST { email, new_password }
-   รอรับ response: { ok:true } หรือ error.message
---------------------------------------------------------- */
+/* ---------- ADMIN RESET PASSWORD (ผ่าน backend ของคุณ) ---------- */
 async function adminResetPassword(){
   const email = (mEmail.value||"").trim();
   const pw = (mPassword.value||"").trim();
   mMsg.textContent = "";
   if (!email) { mMsg.textContent = "กรุณากรอกอีเมล"; return; }
   if (!pw || pw.length < 6) { mMsg.textContent = "รหัสผ่านอย่างน้อย 6 ตัวอักษร"; return; }
-  if (!BACKEND_BASE) { alert("ยังไม่ได้ตั้งค่า BACKEND_BASE สำหรับรีเซ็ตรหัสผ่าน"); return; }
-
-  try{
-    mMsg.textContent = "กำลังดำเนินการ...";
-    const res = await fetch(`${BACKEND_BASE}/admin/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ email, new_password: pw })
-    });
-    const j = await res.json().catch(()=> ({}));
-    if (!res.ok) {
-      mMsg.textContent = "❌ " + (j?.error || `HTTP ${res.status}`);
-      return;
-    }
-    mMsg.textContent = "✅ รีเซ็ตรหัสผ่านสำเร็จ";
-    setTimeout(()=> modal.classList.remove("show"), 800);
-  }catch(e){
-    mMsg.textContent = "❌ " + e.message;
-  }
+  // TODO: ใส่ BACKEND_BASE ของคุณและ endpoint จริง
+  mMsg.textContent = "ยังไม่ได้ต่อ backend สำหรับรีเซ็ตรหัสผ่าน";
 }
 
-/* ---------- ปุ่มเทสดาต้า (ช่วยดีบัคชื่อคอลัมน์/ตาราง) ---------- */
+/* ---------- ปุ่มเทสดาต้า ---------- */
 btnCheckMe.onclick = async () => {
   try {
     const { data, error } = await supabase
