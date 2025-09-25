@@ -3,118 +3,92 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>QR สุ่ม • กลางจอ + ปุ่ม</title>
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0c10" />
-
-  <!-- ✅ Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  <title>QR สุ่มอัตโนมัติ</title>
   <style>
-    /* === (style เดิมของคุณ คงไว้ทั้งหมด) === */
     :root{
-      --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af;
-      --card:#111318; --shadow:0 8px 32px rgba(0,0,0,.45);
-      --accent:#2563eb;
+      --bg:#0b0c10;        
+      --fg:#e5e7eb;
+      --muted:#9ca3af;
+      --shadow:0 8px 32px rgba(0,0,0,.45);
+      --qr-size: 250px;    /* ✅ ลดขนาด QR เป็น 250×250 px */
+      --frame: 20px;       /* ความหนากรอบขาว */
+      --radius: 16px;      
     }
-    @media (prefers-color-scheme: light){
-      :root{
-        --bg:#ffffff; --fg:#0b0c10; --muted:#6b7280;
-        --card:#f5f6f8; --shadow:0 6px 24px rgba(0,0,0,.08);
-      }
+    body{
+      margin:0; background:var(--bg); color:var(--fg);
+      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+      padding:24px;
     }
-    html,body{height:100%;}
-    body{ margin:0; background:var(--bg); color:var(--fg);
-      font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
-    main.center{ min-height:100dvh; padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px);
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
-    .title{font-weight:800; letter-spacing:.2px; text-align:center; margin:0 0 6px;}
+    .title{font-weight:800; letter-spacing:.2px; text-align:center; margin:0;}
     .size{color:var(--muted); font-weight:700; letter-spacing:.2px; text-align:center;}
-    .qr-box{ display:flex; align-items:center; justify-content:center;
-      background:var(--card); padding:18px; border-radius:22px; box-shadow:var(--shadow);
-      min-height: calc(min(78vw, 360px) + 36px); }
-    img.qr{ width:min(78vw, 360px); aspect-ratio:1/1; border-radius:16px; background:#fff; display:block; }
-    .uuid{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.95rem; color:var(--muted);
-      word-break:break-all; text-align:center; }
-    .btns{ display:flex; justify-content:center; align-items:center; gap:10px; width:min(92vw, 440px); flex-wrap:wrap; }
-    button{ appearance:none; border:none; cursor:pointer;
-      padding:12px 14px; border-radius:14px; font-weight:800;
-      background:var(--accent); color:#fff; box-shadow:var(--shadow); min-height:44px; }
-    .btn-dark{background:#111827;} .btn-good{background:#16a34a;}
-    .btn-admin-left{ position:fixed; top:calc(10px + env(safe-area-inset-top)); left:12px; z-index:1000;
-      background:#f59e0b; color:#111; font-weight:800; border:none; padding:10px 14px; border-radius:14px;
-      box-shadow:var(--shadow); cursor:pointer; }
-    .btn-float-right{ position:fixed; top:calc(10px + env(safe-area-inset-top));
-      right:12px; z-index:1000; background:#0ea5e9; }
-    .btn-play{ position:fixed; bottom:calc(16px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
-      width:min(92vw, 440px); z-index:1000; background:#22c55e; font-size:1.05rem; text-align:center;
-      padding:10px 14px; border-radius:14px; color:#fff; font-weight:800; }
-    .toast{ position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
-      padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.85); color:#fff; z-index:9999; }
-    .hidden{display:none !important;}
+
+    .qr-frame{
+      background:#ffffff;                 
+      padding:var(--frame);               
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      display:inline-block;
+    }
+
+    .qr-box{
+      width:var(--qr-size);
+      height:var(--qr-size);
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    #qrCanvas canvas, #qrCanvas img{
+      width:100%; height:100%;
+      background:#fff;                    
+      display:block;
+      border-radius:calc(var(--radius) - 6px);
+    }
+
+    .uuid{
+      font-family:ui-monospace,Menlo,Consolas,monospace;
+      font-size:.95rem; color:var(--muted);
+      word-break:break-all; text-align:center;
+    }
+    .countdown{ font-weight:800; letter-spacing:.2px; }
   </style>
+
+  <!-- qrcodejs + supabase -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <!-- ปุ่มแอดมิน -->
-  <button id="btnAdmin" class="btn-admin-left" type="button">Admin</button>
+  <h1 class="title">คิวอาร์โค้ด</h1>
+  <h1 class="title" style="color:#FF0000;">*สำคัญห้ามหาย*</h1>
 
-  <!-- ปุ่มฐานการเรียนรู้ -->
-  <a href="Extention.html" class="btn-float-right">ฐานการเรียนรู้</a>
+  <div id="sizeLabel" class="size">ขนาด: —</div>
 
-  <main class="center">
-    <h1 class="title">คิวอาร์โค้ด</h1>
-    <h1 class="title" style="color:#FF0000;">*สำคัญห้ามหาย*</h1>
+  <div class="qr-frame">
+    <div class="qr-box"><div id="qrCanvas" aria-label="QR"></div></div>
+  </div>
 
-    <div id="sizeLabel" class="size">ขนาด: —</div>
-    <div class="qr-box"><img id="qrImg" class="qr" alt="QR"></div>
-    <div class="uuid" id="uuidText">—</div>
+  <div class="uuid" id="uuidText">—</div>
 
-    <div class="btns">
-      <button id="btnGen">สุ่มคิวอาร์โค้ด</button>
-      <button id="btnSave" class="btn-good hidden">บันทึกรูปคิวอาร์โค้ด</button>
-      <button id="btnCopy" class="btn-dark hidden">คัดลอกรหัส</button>
-    </div>
-  </main>
-
-  <a id="btnPlay" href="game.html" class="btn-play">เล่นเกม</a>
-
-  <!-- ✅ ฟอร์ม login/logout -->
-  <section style="padding:20px; text-align:center;">
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <button onclick="signup()">Register</button>
-    <button onclick="logout()">Logout</button>
-    <p id="me">ยังไม่ได้ล็อกอิน</p>
-  </section>
+  <div class="countdown" aria-live="polite">
+    สุ่มใหม่ใน: <span id="count">—</span> วินาที
+  </div>
 
 <script>
 (function(){
-  // ====== CONFIG ======
-  const SUPABASE_URL = "https://<your-project>.supabase.co";   // 👈 เปลี่ยนเป็นของคุณ
-  const SUPABASE_ANON_KEY = "<your-anon-key>";                 // 👈 เปลี่ยนเป็นของคุณ
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+  const supabase = window.supabase.createClient?.(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const QR_PX = 1024;
-  const STORAGE_KEY = 'qr_locked_code_v1';
-  const ADMIN_PASS = '12345';
+  const PERIOD_MS = 30_000;  
+  const QR_PX = 250;         // ✅ ต้องตรงกับ --qr-size
+  const QUIET_MARGIN = 4;    
 
-  // ====== Elements ======
-  const img = document.getElementById('qrImg');
   const sizeLabel = document.getElementById('sizeLabel');
-  const uuidText = document.getElementById('uuidText');
-  const btnGen = document.getElementById('btnGen');
-  const btnSave = document.getElementById('btnSave');
-  const btnCopy = document.getElementById('btnCopy');
+  const uuidText  = document.getElementById('uuidText');
+  const countEl   = document.getElementById('count');
+  const qrBox     = document.getElementById('qrCanvas');
 
-  // ====== Helpers ======
-  function toast(msg){
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(), 1400);
-  }
+  let nextAt = null;
+  let ticker = null;
 
   function shortId(len){
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -124,91 +98,55 @@
   }
 
   function drawQR(text){
-    const base = 'https://api.qrserver.com/v1/create-qr-code/';
-    img.src = base + '?size=' + QR_PX + 'x' + QR_PX + '&format=png&qzone=2&margin=2&data=' + encodeURIComponent(text);
-    sizeLabel.textContent = 'ขนาด: ' + QR_PX + '×' + QR_PX + ' px';
+    qrBox.innerHTML = '';
+    new QRCode(qrBox, {
+      text,
+      width: QR_PX,
+      height: QR_PX,
+      correctLevel: QRCode.CorrectLevel.M,
+      colorDark: "#000000",
+      colorLight: "#ffffff",  
+      margin: QUIET_MARGIN
+    });
+    sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
   }
 
-  function applyLockedUI(code){
-    if (!code) return;
-    uuidText.textContent = code;
-    drawQR(code);
-    btnGen.classList.add('hidden');
-    btnSave.classList.remove('hidden');
-    btnCopy.classList.remove('hidden');
-  }
-
-  // ====== Supabase Auth ======
-  async function login(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return alert(error.message);
-    toast("ล็อกอินสำเร็จ");
-    showMe();
-  }
-  async function signup(){
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) return alert(error.message);
-    alert("สมัครสำเร็จ โปรดยืนยันอีเมล");
-  }
-  async function logout(){
-    await supabase.auth.signOut();
-    toast("ออกจากระบบแล้ว");
-    showMe();
-  }
-  async function showMe(){
-    const { data: { user } } = await supabase.auth.getUser();
-    document.getElementById("me").textContent = user ? `เข้าสู่ระบบ: ${user.email}` : "ยังไม่ได้ล็อกอิน";
-  }
-  supabase.auth.onAuthStateChange(showMe);
-
-  // ====== Insert QR (เก็บลง Supabase DB ด้วย user token) ======
   async function sendToSupabase(code){
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("ยังไม่ได้ล็อกอิน");
-
-    const accessToken = session.access_token;
+    if (!supabase) return;
     const payload = [{ uuid: code, user_agent: navigator.userAgent }];
-
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/qr_codes`, { // 👈 ใช้ table จริงของคุณ
+    await fetch(`${SUPABASE_URL}/rest/v1/qr_codes`, {
       method: "POST",
       headers: {
         apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${accessToken}`,   // ✅ ส่ง user token
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         "Content-Type": "application/json",
         Prefer: "return=representation"
       },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
   }
 
-  // ====== Actions ======
-  async function handleGenerateOnce(){
-    try {
-      const code = shortId(12);
-      await sendToSupabase(code);   // ✅ จะเข้า audit log พร้อม changed_by
-      applyLockedUI(code);
-      toast("สร้างและบันทึกสำเร็จ");
-    } catch(e){
-      console.error(e);
-      toast("บันทึกฐานข้อมูลล้มเหลว");
-    }
+  async function generateQR(){
+    const code = shortId(12);
+    uuidText.textContent = code;
+    drawQR(code);
+    try{ await sendToSupabase(code); }catch(e){ console.error(e); }
+    nextAt = Date.now() + PERIOD_MS;
   }
 
-  function savePNG(){ /* (โค้ดเดิมของคุณ ไม่เปลี่ยน) */ }
-  function copyCode(){ /* (โค้ดเดิมของคุณ ไม่เปลี่ยน) */ }
+  function startTicker(){
+    if (ticker) clearInterval(ticker);
+    ticker = setInterval(()=>{
+      if (!nextAt){ countEl.textContent = '—'; return; }
+      const remain = Math.max(0, nextAt - Date.now());
+      const sec = Math.ceil(remain / 1000);
+      countEl.textContent = String(sec);
+      if (remain <= 0){ generateQR(); }
+    }, 250);
+  }
 
-  // Events
-  btnGen?.addEventListener('click', handleGenerateOnce);
-  btnSave?.addEventListener('click', savePNG);
-  btnCopy?.addEventListener('click', copyCode);
-
-  showMe();
+  generateQR();
+  startTicker();
 })();
 </script>
 </body>

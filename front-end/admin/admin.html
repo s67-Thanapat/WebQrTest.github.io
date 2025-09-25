@@ -164,9 +164,9 @@ function renderTable(){
   const q=(search.value||"").trim().toLowerCase();
   const rows=RAW.filter(r=>{
     if(!q) return true;
-    return String(r.id).toLowerCase().includes(q)
-        || String(r.code||"").toLowerCase().includes(q)
-        || String(r.user_agent||"").toLowerCase().includes(q);
+    return String(r[COLS.id]).toLowerCase().includes(q)
+        || String(r[COLS.code]||"").toLowerCase().includes(q)
+        || String(r[COLS.ua]||"").toLowerCase().includes(q);
   });
 
   if(rows.length===0){
