@@ -45,11 +45,8 @@
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
     .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-    /* จัดให้อยู่กลางทุกช่อง */
-    thead th, tbody td {
-      text-align: center;
-      vertical-align: middle;
-    }
+    /* จัดกลางทุกช่องของตาราง */
+    thead th, tbody td { text-align:center; vertical-align:middle; }
 
     /* Footer + notice */
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
@@ -63,8 +60,8 @@
 
     <!-- Summary -->
     <div class="info-bar">
-      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers" class="mono">—</span></div>
-      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span></div>
+      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers"  class="mono">—</span>คน</div>
+      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span>ฐาน</div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
 
@@ -100,13 +97,15 @@
   </div>
 
 <script>
+/* ---------- CONFIG ---------- */
 const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // ใส่ key ของคุณ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const tz = 'Asia/Bangkok';
 const fmtTime = new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
 const fmtFull = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:tz});
 
+/* ---------- ELEMENTS ---------- */
 const tbody=document.getElementById("tbody");
 const totalUsers=document.getElementById("totalUsers");
 const totalTables=document.getElementById("totalTables");
@@ -119,40 +118,78 @@ const countLabel=document.getElementById("countLabel");
 const lastUpdate=document.getElementById("lastUpdate");
 const notice=document.getElementById("notice");
 
+/* ---------- CLOCK ---------- */
 setInterval(()=>{ clock.textContent = fmtTime.format(new Date()); },1000);
 
+/* ---------- SUMMARY: นับจาก qrcodes ---------- */
 async function loadSummary(){
+  // 1) พยายามนับ "ผู้ใช้ไม่ซ้ำ" ด้วย RPC count_distinct_codes()
   try{
-    const { data } = await supabase.from("profiles").select("id").order("id",{ascending:false}).limit(1).maybeSingle();
-    totalUsers.textContent = data?.id ?? "—";
-  }catch{ totalUsers.textContent="—"; }
+    const { data, error } = await supabase.rpc("count_distinct_codes");
+    if (error) throw error;
+    if (typeof data === "number") {
+      totalUsers.textContent = data;
+    } else {
+      // ถ้า RPC คืนไม่ใช่ตัวเลข ให้ fallback
+      throw new Error("RPC returned non-number");
+    }
+  }catch(e){
+    console.warn("[summary] RPC count_distinct_codes failed, fallback to total rows:", e?.message || e);
+    // 2) fallback: นับจำนวนแถวทั้งหมดของ qrcodes (ไม่ใช่ distinct)
+    try{
+      const { count, error } = await supabase
+        .from("qrcodes")
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      totalUsers.textContent = (typeof count === "number") ? count : "—";
+      // แจ้งเตือนเบา ๆ ว่ากำลังใช้ fallback
+      notice.textContent = "ℹ️ แสดงจำนวนรายการทั้งหมด (fallback) — แนะนำสร้าง RPC 'count_distinct_codes' เพื่อผู้ใช้ไม่ซ้ำ";
+    }catch(e2){
+      console.warn("[summary] fallback count qrcodes failed:", e2?.message || e2);
+      totalUsers.textContent = "—";
+    }
+  }
 
+  // จำนวนฐาน (คงเดิม)
   try{
-    const { data } = await supabase.rpc("get_table_count");
+    const { data, error } = await supabase.rpc("get_table_count");
+    if (error) throw error;
     totalTables.textContent = data ?? "—";
-  }catch{ totalTables.textContent="—"; }
+  }catch(e){
+    totalTables.textContent = "—";
+  }
 }
 
+/* ---------- TABLE: last 1h (≤25) with fallback ---------- */
 let RAW=[];
 async function loadTable(){
   tbody.innerHTML=`<tr><td colspan="4" class="muted">⏳ กำลังโหลด...</td></tr>`;
-  notice.textContent="";
+  // อย่าทับ notice จาก summary ที่อาจแสดง fallback
+  const prevNotice = notice.textContent;
 
   const oneHourAgo=new Date(Date.now()-60*60*1000).toISOString();
-
   let { data, error } = await supabase.from("qrcodes")
     .select("id,code,user_agent,created_at")
     .gte("created_at",oneHourAgo)
     .order("created_at",{ascending:false})
     .limit(25);
 
-  if(error){ tbody.innerHTML=`<tr><td colspan="4">❌ ${error.message}</td></tr>`; return; }
+  if(error){
+    tbody.innerHTML=`<tr><td colspan="4">❌ ${error.message}</td></tr>`;
+    return;
+  }
 
+  // fallback: ถ้าไม่มีเลยใน 1 ชั่วโมง → ล่าสุด 25 แถว
   if(!data || data.length===0){
-    const res = await supabase.from("qrcodes").select("id,code,user_agent,created_at")
-      .order("created_at",{ascending:false}).limit(25);
+    const res = await supabase.from("qrcodes")
+      .select("id,code,user_agent,created_at")
+      .order("created_at",{ascending:false})
+      .limit(25);
     if(!res.error){ data = res.data; }
-    notice.textContent = "⚠️ ไม่มีข้อมูลใน 1 ชั่วโมงล่าสุด แสดงข้อมูลล่าสุดแทน";
+    notice.textContent = prevNotice || "⚠️ ไม่มีข้อมูลใน 1 ชั่วโมงล่าสุด แสดงข้อมูลล่าสุดแทน";
+  } else {
+    // คืนค่าข้อความ notice ที่มาจาก summary ถ้ามี
+    notice.textContent = prevNotice || "";
   }
 
   RAW = data || [];
@@ -164,9 +201,9 @@ function renderTable(){
   const q=(search.value||"").trim().toLowerCase();
   const rows=RAW.filter(r=>{
     if(!q) return true;
-    return String(r[COLS.id]).toLowerCase().includes(q)
-        || String(r[COLS.code]||"").toLowerCase().includes(q)
-        || String(r[COLS.ua]||"").toLowerCase().includes(q);
+    return String(r.id).toLowerCase().includes(q)
+        || String(r.code||"").toLowerCase().includes(q)
+        || String(r.user_agent||"").toLowerCase().includes(q);
   });
 
   if(rows.length===0){
@@ -188,10 +225,12 @@ function renderTable(){
   countLabel.textContent = `ทั้งหมด ${rows.length} รายการ (จาก ${RAW.length})`;
 }
 
+/* ---------- EVENTS ---------- */
 btnReload.onclick = async ()=>{ await loadSummary(); await loadTable(); };
 btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
 search.addEventListener('input', renderTable);
 
+/* ---------- EXPORT CSV ---------- */
 btnExport.onclick = ()=>{
   if(!RAW.length) return;
   const header = ["id","time","code","user_agent"];
@@ -213,6 +252,7 @@ btnExport.onclick = ()=>{
   URL.revokeObjectURL(url);
 };
 
+/* ---------- INIT + AUTO REFRESH ---------- */
 (async()=>{ await loadSummary(); await loadTable(); })();
 setInterval(async()=>{ await loadSummary(); await loadTable(); }, 10000);
 </script>
