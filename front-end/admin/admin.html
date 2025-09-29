@@ -6,40 +6,84 @@
   <title>Admin Panel - QR Codes</title>
   <style>
     :root{
-      --bg:#0b0c10; --fg:#e5e7eb; --muted:#9ca3af; --card:#111318;
-      --accent:#2563eb; --accent-2:#1d4ed8; --danger:#dc2626; --border:rgba(255,255,255,.08);
-      --board-h:#1c1f27; --row-a:#14161d; --row-b:#0f1117; --glow:0 8px 32px rgba(0,0,0,.45);
+      /* ===== Light Minimal Palette ===== */
+      --bg:#f7f8fc;            /* พื้นหลังทั้งหน้า */
+      --fg:#0b1220;            /* สีตัวหนังสือหลัก */
+      --muted:#6b7280;         /* สีข้อความรอง */
+      --card:#ffffff;          /* พื้นหลังการ์ด/แผง */
+      --border:#e5e7eb;        /* สีเส้นขอบอ่อน */
+      --accent:#2563eb;        /* ปุ่มหลัก */
+      --accent-2:#1e40af;      /* ปุ่มหลัก (hover) */
+      --danger:#dc2626;        /* ปุ่มลบ/เตือน */
+      --board-h:#f1f5f9;       /* หัวตาราง */
+      --row-a:#ffffff;         /* แถวคี่ */
+      --row-b:#f9fafb;         /* แถวคู่ */
+      --glow:0 6px 18px rgba(2,6,23,.06); /* เงาอ่อนๆ */
+      --focus:#93c5fd;         /* วงแหวนโฟกัส */
+      --chip:#f8fafc;          /* พื้นหลังชิปข้อมูล */
     }
+
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    .wrap{max-width:1100px;margin:20px auto;padding:16px}
-    h1{margin:0 0 12px}
+    body{
+      margin:0;background:var(--bg);color:var(--fg);
+      font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+    }
+
+    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    h1{margin:0 0 14px;font-size:22px}
 
     /* Info bar */
-    .info-bar{display:flex;gap:16px;align-items:center;background:var(--card);
-      border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--glow)}
-    .chip{display:inline-flex;align-items:center;gap:8px;background:#0f1117;
-      border:1px solid var(--border);padding:8px 10px;border-radius:10px;font-weight:700}
+    .info-bar{
+      display:flex;gap:12px;align-items:center;background:var(--card);
+      border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:var(--glow)
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;background:var(--chip);
+      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700
+    }
     .muted{color:var(--muted)}
     .clock{margin-left:auto;font-weight:800;letter-spacing:.5px}
 
     /* Toolbar */
-    .bar{display:flex;gap:8px;align-items:center;background:var(--card);
-      border:1px solid var(--border);padding:10px;border-radius:12px;margin-top:12px}
+    .bar{
+      display:flex;gap:10px;align-items:center;background:var(--card);
+      border:1px solid var(--border);padding:12px;border-radius:14px;margin-top:12px;box-shadow:var(--glow)
+    }
     .spacer{flex:1}
-    input[type="search"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);
-      background:transparent;color:var(--fg);min-width:300px}
-    button{padding:8px 12px;border:none;border-radius:10px;cursor:pointer}
-    .btn{background:var(--accent);color:#fff}.btn:hover{background:var(--accent-2)}
-    .btn-ghost{background:transparent;color:var(--fg);border:1px solid var(--border)}
+    input[type="search"]{
+      padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+      background:#fff;color:var(--fg);min-width:260px;outline:none;
+      transition:border-color .15s, box-shadow .15s
+    }
+    input[type="search"]:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px var(--focus);
+    }
+
+    button{
+      padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;
+      transition:transform .05s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease
+    }
+    button:active{ transform:translateY(1px) }
+    .btn{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.18)}
+    .btn:hover{background:var(--accent-2)}
+    .btn-ghost{
+      background:#fff;color:var(--fg);border:1px solid var(--border)
+    }
+    .btn-ghost:hover{ box-shadow:0 2px 10px rgba(2,6,23,.08) }
     .btn-del{background:var(--danger);color:#fff}
+    .btn-del:hover{ filter:brightness(.95) }
 
     /* Flight board table */
-    .board{margin-top:12px;border:2px solid #2a2e3a;border-radius:10px;overflow:hidden;box-shadow:var(--glow)}
+    .board{
+      margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--glow);background:var(--card)
+    }
     table{width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed}
-    thead th{background:var(--board-h);text-transform:uppercase;letter-spacing:.4px;
-      padding:12px 10px;border-bottom:1px solid #2a2e3a}
-    tbody td{padding:12px 10px;border-bottom:1px solid #151822}
+    thead th{
+      background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;
+      padding:12px 10px;border-bottom:1px solid var(--border);color:#334155;font-weight:700
+    }
+    tbody td{padding:12px 10px;border-bottom:1px solid var(--border);color:#0f172a}
     tbody tr:nth-child(odd){background:var(--row-a)}
     tbody tr:nth-child(even){background:var(--row-b)}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
@@ -50,7 +94,17 @@
 
     /* Footer + notice */
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-    .notice{margin-top:6px;color:#fbbf24;font-size:13px}
+    .notice{margin-top:6px;color:#b45309;font-size:13px}
+
+    /* Small screens */
+    @media (max-width:720px){
+      .wrap{padding:12px}
+      .info-bar{flex-wrap:wrap;gap:8px}
+      .clock{margin-left:0}
+      input[type="search"]{min-width:160px;flex:1}
+      .bar{flex-wrap:wrap}
+      table{font-size:14px}
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -60,8 +114,8 @@
 
     <!-- Summary -->
     <div class="info-bar">
-      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers"  class="mono">—</span>คน</div>
-      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span>ฐาน</div>
+      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers"  class="mono">—</span> คน</div>
+      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span> ฐาน</div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
 
@@ -99,7 +153,7 @@
 <script>
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU"; // ใส่ key ของคุณ
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const tz = 'Asia/Bangkok';
 const fmtTime = new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
@@ -123,26 +177,22 @@ setInterval(()=>{ clock.textContent = fmtTime.format(new Date()); },1000);
 
 /* ---------- SUMMARY: นับจาก qrcodes ---------- */
 async function loadSummary(){
-  // 1) พยายามนับ "ผู้ใช้ไม่ซ้ำ" ด้วย RPC count_distinct_codes()
   try{
     const { data, error } = await supabase.rpc("count_distinct_codes");
     if (error) throw error;
     if (typeof data === "number") {
       totalUsers.textContent = data;
     } else {
-      // ถ้า RPC คืนไม่ใช่ตัวเลข ให้ fallback
       throw new Error("RPC returned non-number");
     }
   }catch(e){
     console.warn("[summary] RPC count_distinct_codes failed, fallback to total rows:", e?.message || e);
-    // 2) fallback: นับจำนวนแถวทั้งหมดของ qrcodes (ไม่ใช่ distinct)
     try{
       const { count, error } = await supabase
         .from("qrcodes")
         .select("id", { count: "exact", head: true });
       if (error) throw error;
       totalUsers.textContent = (typeof count === "number") ? count : "—";
-      // แจ้งเตือนเบา ๆ ว่ากำลังใช้ fallback
       notice.textContent = "ℹ️ แสดงจำนวนรายการทั้งหมด (fallback) — แนะนำสร้าง RPC 'count_distinct_codes' เพื่อผู้ใช้ไม่ซ้ำ";
     }catch(e2){
       console.warn("[summary] fallback count qrcodes failed:", e2?.message || e2);
@@ -150,7 +200,6 @@ async function loadSummary(){
     }
   }
 
-  // จำนวนฐาน (คงเดิม)
   try{
     const { data, error } = await supabase.rpc("get_table_count");
     if (error) throw error;
@@ -164,7 +213,6 @@ async function loadSummary(){
 let RAW=[];
 async function loadTable(){
   tbody.innerHTML=`<tr><td colspan="4" class="muted">⏳ กำลังโหลด...</td></tr>`;
-  // อย่าทับ notice จาก summary ที่อาจแสดง fallback
   const prevNotice = notice.textContent;
 
   const oneHourAgo=new Date(Date.now()-60*60*1000).toISOString();
@@ -179,7 +227,6 @@ async function loadTable(){
     return;
   }
 
-  // fallback: ถ้าไม่มีเลยใน 1 ชั่วโมง → ล่าสุด 25 แถว
   if(!data || data.length===0){
     const res = await supabase.from("qrcodes")
       .select("id,code,user_agent,created_at")
@@ -188,7 +235,6 @@ async function loadTable(){
     if(!res.error){ data = res.data; }
     notice.textContent = prevNotice || "⚠️ ไม่มีข้อมูลใน 1 ชั่วโมงล่าสุด แสดงข้อมูลล่าสุดแทน";
   } else {
-    // คืนค่าข้อความ notice ที่มาจาก summary ถ้ามี
     notice.textContent = prevNotice || "";
   }
 
