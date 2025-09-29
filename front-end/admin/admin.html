@@ -3,143 +3,99 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - QR Codes</title>
+  <title>DB Admin • Supabase (Safe)</title>
   <style>
     :root{
-      /* ===== Light Minimal Palette ===== */
-      --bg:#f7f8fc;            /* พื้นหลังทั้งหน้า */
-      --fg:#0b1220;            /* สีตัวหนังสือหลัก */
-      --muted:#6b7280;         /* สีข้อความรอง */
-      --card:#ffffff;          /* พื้นหลังการ์ด/แผง */
-      --border:#e5e7eb;        /* สีเส้นขอบอ่อน */
-      --accent:#2563eb;        /* ปุ่มหลัก */
-      --accent-2:#1e40af;      /* ปุ่มหลัก (hover) */
-      --danger:#dc2626;        /* ปุ่มลบ/เตือน */
-      --board-h:#f1f5f9;       /* หัวตาราง */
-      --row-a:#ffffff;         /* แถวคี่ */
-      --row-b:#f9fafb;         /* แถวคู่ */
-      --glow:0 6px 18px rgba(2,6,23,.06); /* เงาอ่อนๆ */
-      --focus:#93c5fd;         /* วงแหวนโฟกัส */
-      --chip:#f8fafc;          /* พื้นหลังชิปข้อมูล */
+      --bg:#f7f8fc; --fg:#0b1220; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
+      --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626; --board-h:#f1f5f9;
+      --row-a:#ffffff; --row-b:#f9fafb; --glow:0 6px 18px rgba(2,6,23,.06);
+      --focus:#93c5fd; --chip:#f8fafc;
     }
-
     *{box-sizing:border-box}
-    body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    }
-
-    .wrap{max-width:1100px;margin:24px auto;padding:16px}
+    body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:1200px;margin:24px auto;padding:16px}
     h1{margin:0 0 14px;font-size:22px}
-
-    /* Info bar */
-    .info-bar{
-      display:flex;gap:12px;align-items:center;background:var(--card);
-      border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:var(--glow)
-    }
-    .chip{
-      display:inline-flex;align-items:center;gap:8px;background:var(--chip);
-      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700
-    }
+    .info-bar,.bar{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;box-shadow:var(--glow)}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700}
     .muted{color:var(--muted)}
     .clock{margin-left:auto;font-weight:800;letter-spacing:.5px}
-
-    /* Toolbar */
-    .bar{
-      display:flex;gap:10px;align-items:center;background:var(--card);
-      border:1px solid var(--border);padding:12px;border-radius:14px;margin-top:12px;box-shadow:var(--glow)
-    }
     .spacer{flex:1}
-    input[type="search"]{
-      padding:10px 12px;border-radius:10px;border:1px solid var(--border);
-      background:#fff;color:var(--fg);min-width:260px;outline:none;
-      transition:border-color .15s, box-shadow .15s
+    input[type="search"], select, textarea{
+      padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--fg);outline:none;
+      transition:border-color .15s, box-shadow .15s; min-width: 220px;
     }
-    input[type="search"]:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 0 3px var(--focus);
-    }
-
-    button{
-      padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;
-      transition:transform .05s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease
-    }
-    button:active{ transform:translateY(1px) }
+    input[type="search"]:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--focus)}
+    button{padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;transition:transform .05s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease}
+    button:active{transform:translateY(1px)}
     .btn{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.18)}
     .btn:hover{background:var(--accent-2)}
-    .btn-ghost{
-      background:#fff;color:var(--fg);border:1px solid var(--border)
-    }
-    .btn-ghost:hover{ box-shadow:0 2px 10px rgba(2,6,23,.08) }
+    .btn-ghost{background:#fff;color:var(--fg);border:1px solid var(--border)}
+    .btn-ghost:hover{box-shadow:0 2px 10px rgba(2,6,23,.08)}
     .btn-del{background:var(--danger);color:#fff}
-    .btn-del:hover{ filter:brightness(.95) }
-
-    /* Flight board table */
-    .board{
-      margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--glow);background:var(--card)
-    }
-    table{width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed}
-    thead th{
-      background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;
-      padding:12px 10px;border-bottom:1px solid var(--border);color:#334155;font-weight:700
-    }
-    tbody td{padding:12px 10px;border-bottom:1px solid var(--border);color:#0f172a}
-    tbody tr:nth-child(odd){background:var(--row-a)}
-    tbody tr:nth-child(even){background:var(--row-b)}
+    .board{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:auto;box-shadow:var(--glow);background:var(--card)}
+    table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto;min-width:800px}
+    thead th{background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;padding:10px;border-bottom:1px solid var(--border);color:#334155;font-weight:700;position:sticky;top:0;z-index:1}
+    tbody td{padding:8px 10px;border-bottom:1px solid var(--border);color:#0f172a}
+    tbody tr:nth-child(odd){background:var(--row-a)} tbody tr:nth-child(even){background:var(--row-b)}
+    td[contenteditable="true"]{outline:none}
+    td[contenteditable="true"]:focus{box-shadow: inset 0 0 0 2px var(--focus)}
     .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
     .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    /* จัดกลางทุกช่องของตาราง */
-    thead th, tbody td { text-align:center; vertical-align:middle; }
-
-    /* Footer + notice */
     .foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
     .notice{margin-top:6px;color:#b45309;font-size:13px}
-
-    /* Small screens */
-    @media (max-width:720px){
-      .wrap{padding:12px}
-      .info-bar{flex-wrap:wrap;gap:8px}
-      .clock{margin-left:0}
-      input[type="search"]{min-width:160px;flex:1}
-      .bar{flex-wrap:wrap}
-      table{font-size:14px}
-    }
+    .row-select{width:16px;height:16px}
+    .sql-box{width:100%; min-height:120px}
+    @media (max-width:720px){ .wrap{padding:12px} .clock{margin-left:0} input[type="search"]{min-width:160px;flex:1} .bar{flex-wrap:wrap} table{font-size:13px} }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="wrap">
-    <h1>ระบบหลังบ้าน - QR Codes</h1>
+    <h1>DB Admin • Supabase</h1>
 
     <!-- Summary -->
     <div class="info-bar">
-      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers"  class="mono">—</span> คน</div>
-      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span> ฐาน</div>
+      <div class="chip">📦 ตาราง: <span id="tableCount" class="mono">—</span></div>
+      <div class="chip">🧑 ผู้ใช้: <span id="userEmail" class="mono">—</span></div>
       <div class="clock" id="clock">--:--:--</div>
     </div>
 
     <!-- Toolbar -->
-    <div class="bar">
-      <button class="btn" id="btnReload">🔄 โหลดข้อมูล</button>
+    <div class="bar" style="margin-top:12px">
+      <label class="muted">ตาราง</label>
+      <select id="tableSelect"></select>
+
+      <button class="btn" id="btnRefresh">รีเฟรช</button>
+      <button class="btn-ghost" id="btnAddRow">เพิ่มแถว</button>
+      <button class="btn-ghost" id="btnSaveEdits">บันทึกการแก้ไข</button>
+      <button class="btn-del" id="btnDeleteRows">ลบแถวที่เลือก</button>
+
       <span class="spacer"></span>
-      <input id="search" type="search" placeholder="ค้นหา (ID / Code / User Agent)" autocomplete="off" />
-      <button class="btn-ghost" id="btnExport">⬇️ ส่งออก CSV</button>
+      <input id="search" type="search" placeholder="ค้นหา (ทุกคอลัมน์)" autocomplete="off" />
+      <button class="btn-ghost" id="btnExport">⬇️ CSV</button>
       <button class="btn-del" id="btnLogout">🚪 Logout</button>
     </div>
 
-    <!-- Flight-board style table -->
+    <!-- Structure / SQL -->
+    <div class="bar" style="margin-top:12px">
+      <details>
+        <summary class="muted" style="cursor:pointer">🔐 โครงสร้างตาราง (SQL สำหรับผู้ดูแล)</summary>
+        <div style="margin-top:8px">
+          <textarea id="sqlInput" class="sql-box" placeholder="ตัวอย่าง: CREATE TABLE public.demo(id uuid primary key default gen_random_uuid(), name text);"></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px">
+            <button class="btn" id="btnRunSQL">รัน SQL (Edge Function)</button>
+            <div class="muted">* ต้องตั้งค่า Edge Function <span class="mono">admin-sql</span> + CORS ก่อน</div>
+          </div>
+          <pre id="sqlResult" style="margin-top:8px; background:#0b1220; color:#e5e7eb; padding:10px; border-radius:8px; max-height:240px; overflow:auto"></pre>
+        </div>
+      </details>
+    </div>
+
+    <!-- Data Table -->
     <div class="board">
-      <table aria-label="รายการ QR Codes">
-        <thead>
-          <tr>
-            <th style="width:80px">ID</th>
-            <th style="width:120px">Time</th>
-            <th>UUID</th>
-            <th>User-Code-Name</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"><tr><td colspan="4" class="muted">กำลังโหลด...</td></tr></tbody>
+      <table aria-label="ตารางข้อมูล">
+        <thead id="thead"></thead>
+        <tbody id="tbody"><tr><td class="muted" style="padding:12px">เลือกตารางเพื่อแสดงข้อมูล…</td></tr></tbody>
       </table>
     </div>
 
@@ -154,153 +110,294 @@
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+const EDGE_BASE = "https://<YOUR-PROJECT-REF>.functions.supabase.co"; // ← เปลี่ยนเป็นของคุณ
+const EDGE_FUNC = "admin-sql"; // ชื่อฟังก์ชัน
+const ALLOW_SQL = true; // ตั้ง false ถ้ายังไม่ deploy
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const tz = 'Asia/Bangkok';
+const tz='Asia/Bangkok';
 const fmtTime = new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
 const fmtFull = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:tz});
 
 /* ---------- ELEMENTS ---------- */
-const tbody=document.getElementById("tbody");
-const totalUsers=document.getElementById("totalUsers");
-const totalTables=document.getElementById("totalTables");
-const clock=document.getElementById("clock");
-const btnReload=document.getElementById("btnReload");
-const btnExport=document.getElementById("btnExport");
-const btnLogout=document.getElementById("btnLogout");
-const search=document.getElementById("search");
-const countLabel=document.getElementById("countLabel");
-const lastUpdate=document.getElementById("lastUpdate");
-const notice=document.getElementById("notice");
+const tableSelect = document.getElementById('tableSelect');
+const tableCount  = document.getElementById('tableCount');
+const userEmail   = document.getElementById('userEmail');
+const thead = document.getElementById('thead');
+const tbody = document.getElementById('tbody');
+const btnRefresh = document.getElementById('btnRefresh');
+const btnAddRow  = document.getElementById('btnAddRow');
+const btnSaveEdits = document.getElementById('btnSaveEdits');
+const btnDeleteRows = document.getElementById('btnDeleteRows');
+const btnExport  = document.getElementById('btnExport');
+const btnLogout  = document.getElementById('btnLogout');
+const search = document.getElementById('search');
+const countLabel = document.getElementById('countLabel');
+const lastUpdate = document.getElementById('lastUpdate');
+const notice = document.getElementById('notice');
+const clock = document.getElementById('clock');
+
+const sqlInput = document.getElementById('sqlInput');
+const btnRunSQL = document.getElementById('btnRunSQL');
+const sqlResult = document.getElementById('sqlResult');
+
+/* ---------- STATE ---------- */
+let CURRENT_TABLE = null;
+let COLUMNS = [];      // [{column_name, data_type, is_nullable, column_default}]
+let PKCOLUMNS = [];    // ["id", ...]
+let RAW_ROWS = [];     // raw from db
+let EDIT_BUFFER = new Map(); // key: rowKey; val: {patch obj}
 
 /* ---------- CLOCK ---------- */
-setInterval(()=>{ clock.textContent = fmtTime.format(new Date()); },1000);
+setInterval(()=> clock.textContent = fmtTime.format(new Date()), 1000);
 
-/* ---------- SUMMARY: นับจาก qrcodes ---------- */
-async function loadSummary(){
-  try{
-    const { data, error } = await supabase.rpc("count_distinct_codes");
-    if (error) throw error;
-    if (typeof data === "number") {
-      totalUsers.textContent = data;
-    } else {
-      throw new Error("RPC returned non-number");
-    }
-  }catch(e){
-    console.warn("[summary] RPC count_distinct_codes failed, fallback to total rows:", e?.message || e);
-    try{
-      const { count, error } = await supabase
-        .from("qrcodes")
-        .select("id", { count: "exact", head: true });
-      if (error) throw error;
-      totalUsers.textContent = (typeof count === "number") ? count : "—";
-      notice.textContent = "ℹ️ แสดงจำนวนรายการทั้งหมด (fallback) — แนะนำสร้าง RPC 'count_distinct_codes' เพื่อผู้ใช้ไม่ซ้ำ";
-    }catch(e2){
-      console.warn("[summary] fallback count qrcodes failed:", e2?.message || e2);
-      totalUsers.textContent = "—";
-    }
-  }
+/* ---------- AUTH INFO ---------- */
+(async()=>{
+  const { data: { user } } = await supabase.auth.getUser();
+  userEmail.textContent = user?.email ?? 'anonymous';
+})();
 
+/* ---------- LOAD TABLE LIST ---------- */
+async function loadTables(){
+  tableSelect.innerHTML = `<option value="">กำลังโหลด…</option>`;
   try{
-    const { data, error } = await supabase.rpc("get_table_count");
-    if (error) throw error;
-    totalTables.textContent = data ?? "—";
+    const { data, error } = await supabase.rpc('list_public_tables');
+    if(error) throw error;
+    tableSelect.innerHTML = `<option value="" disabled selected>— เลือกตาราง —</option>` + 
+      data.map(r=>`<option value="${r.table_name}">${r.table_name} (${r.row_count})</option>`).join('');
+    tableCount.textContent = data.length;
   }catch(e){
-    totalTables.textContent = "—";
+    tableSelect.innerHTML = `<option value="" disabled selected>สร้าง RPC list_public_tables ก่อน</option>`;
+    tableCount.textContent = '—';
+    notice.textContent = "ℹ️ กรุณาสร้าง RPC 'list_public_tables', 'list_columns', 'list_primary_key' ตามคู่มือด้านบน";
   }
 }
 
-/* ---------- TABLE: last 1h (≤25) with fallback ---------- */
-let RAW=[];
-async function loadTable(){
-  tbody.innerHTML=`<tr><td colspan="4" class="muted">⏳ กำลังโหลด...</td></tr>`;
-  const prevNotice = notice.textContent;
+/* ---------- LOAD STRUCTURE ---------- */
+async function loadStructure(table){
+  const [cols, pk] = await Promise.all([
+    supabase.rpc('list_columns', { p_table: table }),
+    supabase.rpc('list_primary_key', { p_table: table })
+  ]);
+  if(cols.error) throw cols.error;
+  if(pk.error) throw pk.error;
+  COLUMNS = cols.data || [];
+  PKCOLUMNS = (pk.data || []).map(x=>x.column_name);
+}
 
-  const oneHourAgo=new Date(Date.now()-60*60*1000).toISOString();
-  let { data, error } = await supabase.from("qrcodes")
-    .select("id,code,user_agent,created_at")
-    .gte("created_at",oneHourAgo)
-    .order("created_at",{ascending:false})
-    .limit(25);
-
+/* ---------- LOAD DATA ---------- */
+async function loadData(){
+  if(!CURRENT_TABLE) return;
+  tbody.innerHTML = `<tr><td style="padding:12px" class="muted">⏳ กำลังโหลด…</td></tr>`;
+  EDIT_BUFFER.clear();
+  const { data, error } = await supabase.from(CURRENT_TABLE).select('*').limit(200).order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
   if(error){
-    tbody.innerHTML=`<tr><td colspan="4">❌ ${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`;
     return;
   }
-
-  if(!data || data.length===0){
-    const res = await supabase.from("qrcodes")
-      .select("id,code,user_agent,created_at")
-      .order("created_at",{ascending:false})
-      .limit(25);
-    if(!res.error){ data = res.data; }
-    notice.textContent = prevNotice || "⚠️ ไม่มีข้อมูลใน 1 ชั่วโมงล่าสุด แสดงข้อมูลล่าสุดแทน";
-  } else {
-    notice.textContent = prevNotice || "";
-  }
-
-  RAW = data || [];
+  RAW_ROWS = data || [];
   renderTable();
   lastUpdate.textContent = fmtFull.format(new Date());
 }
 
+/* ---------- RENDER TABLE ---------- */
 function renderTable(){
-  const q=(search.value||"").trim().toLowerCase();
-  const rows=RAW.filter(r=>{
+  // head
+  const headCols = ['','_rowKey', ...COLUMNS.map(c=>c.column_name)];
+  thead.innerHTML = `<tr>${headCols.map((h,i)=> {
+    if(i===0) return `<th style="width:36px"></th>`;
+    if(i===1) return `<th class="mono" style="min-width:100px">PK</th>`;
+    return `<th class="nowrap">${h}</th>`;
+  }).join('')}</tr>`;
+
+  // filter
+  const q = (search.value || '').toLowerCase();
+  const rows = RAW_ROWS.filter(obj=>{
     if(!q) return true;
-    return String(r.id).toLowerCase().includes(q)
-        || String(r.code||"").toLowerCase().includes(q)
-        || String(r.user_agent||"").toLowerCase().includes(q);
+    return Object.values(obj).some(v=> String(v??'').toLowerCase().includes(q));
   });
 
+  // body
   if(rows.length===0){
-    tbody.innerHTML=`<tr><td colspan="4" class="muted">ไม่มีข้อมูล</td></tr>`;
+    tbody.innerHTML = `<tr><td style="padding:12px" class="muted">ไม่มีข้อมูล</td></tr>`;
   }else{
-    tbody.innerHTML = rows.map(r=>{
-      const t = r.created_at ? fmtTime.format(new Date(r.created_at)) : "-";
-      const ua = (r.user_agent||"-").replaceAll("<","&lt;").replaceAll(">","&gt;");
-      const code = (r.code??"-").toString().replaceAll("<","&lt;").replaceAll(">","&gt;");
-      return `
-        <tr>
-          <td class="mono">${r.id}</td>
-          <td class="mono">${t}</td>
-          <td class="mono nowrap" title="${code}">${code}</td>
-          <td class="nowrap" title="${ua}">${ua}</td>
-        </tr>`;
-    }).join("");
+    tbody.innerHTML = rows.map(row=>{
+      const rowKey = getRowKey(row); // string
+      const tds = COLUMNS.map(col=>{
+        const colName = col.column_name;
+        const val = row[colName];
+        const editable = !PKCOLUMNS.includes(colName); // ไม่แก้ไข PK
+        return `<td contenteditable="${editable}" data-col="${colName}" data-rowkey="${rowKey}">${escapeHTML(val)}</td>`;
+      }).join('');
+      return `<tr>
+        <td><input type="checkbox" class="row-select" data-rowkey="${rowKey}"></td>
+        <td class="mono">${rowKey}</td>
+        ${tds}
+      </tr>`;
+    }).join('');
   }
-  countLabel.textContent = `ทั้งหมด ${rows.length} รายการ (จาก ${RAW.length})`;
+  countLabel.textContent = `ทั้งหมด ${rows.length} แถว (จาก ${RAW_ROWS.length})`;
 }
 
-/* ---------- EVENTS ---------- */
-btnReload.onclick = async ()=>{ await loadSummary(); await loadTable(); };
-btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
-search.addEventListener('input', renderTable);
+/* ---------- UTIL ---------- */
+function escapeHTML(v){
+  if(v===null || v===undefined) return '';
+  return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+}
 
-/* ---------- EXPORT CSV ---------- */
-btnExport.onclick = ()=>{
-  if(!RAW.length) return;
-  const header = ["id","time","code","user_agent"];
-  const lines = [header.join(",")];
-  RAW.forEach(r=>{
-    const t = r.created_at ? new Date(r.created_at).toISOString() : "";
-    const row = [
-      `"${r.id}"`,
-      `"${t}"`,
-      `"${(r.code??"").toString().replaceAll('"','""')}"`,
-      `"${(r.user_agent??"").replaceAll('"','""')}"`
-    ];
-    lines.push(row.join(","));
+// ทำ rowKey จากค่าคีย์หลัก (รองรับหลายคอลัมน์)
+function getRowKey(row){
+  if(PKCOLUMNS.length===0){
+    // fallback: ใช้ค่า hash ชั่วคราว (ไม่ควรในโปรดักชัน)
+    return 'ROW-' + JSON.stringify(row).length + '-' + Object.values(row).join('|').length;
+  }
+  return PKCOLUMNS.map(pk=>`${pk}:${row[pk]}`).join('|');
+}
+
+function parseRowKey(rowKey){
+  // "id:123|ver:2" -> {id:'123', ver:'2'}
+  const obj = {};
+  rowKey.split('|').forEach(pair=>{
+    const [k,...rest] = pair.split(':');
+    obj[k] = rest.join(':'); // เผื่อค่ามี ':'
   });
+  return obj;
+}
+
+/* ---------- EVENTS: Edit Buffer ---------- */
+tbody.addEventListener('input', (e)=>{
+  const cell = e.target.closest('td[contenteditable]');
+  if(!cell) return;
+  const col = cell.dataset.col;
+  const rowKey = cell.dataset.rowkey;
+  const newVal = cell.textContent;
+  const patch = EDIT_BUFFER.get(rowKey) || {};
+  patch[col] = newVal;
+  EDIT_BUFFER.set(rowKey, patch);
+});
+
+/* ---------- ACTIONS ---------- */
+btnRefresh.onclick = async ()=>{
+  if(!CURRENT_TABLE) return;
+  await loadStructure(CURRENT_TABLE);
+  await loadData();
+};
+
+btnAddRow.onclick = async ()=>{
+  if(!CURRENT_TABLE) return;
+  // เตรียม object จาก columns (ยกเว้น PK ที่มี default)
+  const template = {};
+  for(const c of COLUMNS){
+    if(PKCOLUMNS.includes(c.column_name) && /default/i.test(c.column_default||'')) continue;
+    template[c.column_name] = null;
+  }
+  const raw = prompt("ใส่ JSON ของแถวใหม่ (ค่าไม่ระบุ = null):", JSON.stringify(template, null, 2));
+  if(!raw) return;
+  try{
+    const obj = JSON.parse(raw);
+    const { error } = await supabase.from(CURRENT_TABLE).insert(obj).select('*');
+    if(error) throw error;
+    await loadData();
+  }catch(e){
+    alert("เพิ่มไม่ได้: " + (e?.message || e));
+  }
+};
+
+btnSaveEdits.onclick = async ()=>{
+  if(EDIT_BUFFER.size===0){ alert("ยังไม่มีการแก้ไข"); return; }
+  for (const [rowKey, patch] of EDIT_BUFFER.entries()){
+    try{
+      let q = supabase.from(CURRENT_TABLE).update(patch);
+      const keys = parseRowKey(rowKey);
+      for(const pk of PKCOLUMNS){
+        q = q.eq(pk, keys[pk]);
+      }
+      const { error } = await q.select('*');
+      if(error) throw error;
+    }catch(e){
+      alert(`บันทึกไม่สำเร็จ (row ${rowKey}): ` + (e?.message || e));
+      return;
+    }
+  }
+  EDIT_BUFFER.clear();
+  await loadData();
+  alert("บันทึกแล้ว");
+};
+
+btnDeleteRows.onclick = async ()=>{
+  const checks = [...document.querySelectorAll('.row-select:checked')];
+  if(checks.length===0){ alert("ยังไม่ได้เลือกแถว"); return; }
+  if(!confirm(`ลบ ${checks.length} แถว?`)) return;
+  for(const c of checks){
+    const keys = parseRowKey(c.dataset.rowkey);
+    let q = supabase.from(CURRENT_TABLE).delete();
+    for(const pk of PKCOLUMNS){ q = q.eq(pk, keys[pk]); }
+    const { error } = await q;
+    if(error){ alert("ลบไม่สำเร็จ: "+error.message); return; }
+  }
+  await loadData();
+};
+
+btnExport.onclick = ()=>{
+  if(!RAW_ROWS.length) return;
+  const cols = COLUMNS.map(c=>c.column_name);
+  const header = ["_rowKey", ...cols];
+  const lines = [header.join(",")];
+  for(const row of RAW_ROWS){
+    const rk = getRowKey(row);
+    const fields = [rk, ...cols.map(c=>{
+      const v = row[c]; return `"${String(v??'').replaceAll('"','""')}"`;
+    })];
+    lines.push(fields.join(","));
+  }
   const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `qrcodes_${Date.now()}.csv`; a.click();
+  a.href=url; a.download=`${CURRENT_TABLE}_${Date.now()}.csv`; a.click();
   URL.revokeObjectURL(url);
 };
 
-/* ---------- INIT + AUTO REFRESH ---------- */
-(async()=>{ await loadSummary(); await loadTable(); })();
-setInterval(async()=>{ await loadSummary(); await loadTable(); }, 10000);
+btnLogout.onclick = async ()=>{
+  await supabase.auth.signOut();
+  window.location.href = "login.html";
+};
+
+search.addEventListener('input', renderTable);
+
+tableSelect.addEventListener('change', async ()=>{
+  CURRENT_TABLE = tableSelect.value;
+  notice.textContent = "";
+  await loadStructure(CURRENT_TABLE);
+  await loadData();
+});
+
+/* ---------- RUN SQL VIA EDGE FUNCTION ---------- */
+if(btnRunSQL){
+  btnRunSQL.onclick = async ()=>{
+    if(!ALLOW_SQL){ alert("ยังไม่เปิดใช้งาน Edge Function"); return; }
+    const sql = sqlInput.value.trim();
+    if(!sql) return;
+    // TODO: ตรวจสิทธิ์จริง ควรเช็คจาก token -> is_admin
+    const is_admin = true;
+    try{
+      const res = await fetch(`${EDGE_BASE}/${EDGE_FUNC}`,{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({ sql, is_admin })
+      });
+      const j = await res.json();
+      sqlResult.textContent = JSON.stringify(j,null,2);
+    }catch(e){
+      sqlResult.textContent = 'เรียกไม่สำเร็จ: ' + (e?.message || e);
+    }
+  };
+}
+
+/* ---------- INIT ---------- */
+(async()=>{
+  await loadTables();
+})();
+setInterval(()=>{ /* นาฬิกา */ }, 1000);
 </script>
 </body>
 </html>
