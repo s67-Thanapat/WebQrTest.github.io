@@ -404,7 +404,7 @@ function fmtTS(ts){ try{ return fmtFull.format(new Date(ts)); }catch{ return ts 
 
 /* ---------- DATA actions ---------- */
 btnRefresh.onclick = async ()=>{ if(!CURRENT_TABLE) return; await loadStructure(CURRENT_TABLE); await loadData(); };
-btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href = "login.html"; };
+btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href = "admin/signin.html"; };
 search.addEventListener('input', renderTable);
 tableSelect.addEventListener('change', async ()=>{
   CURRENT_TABLE = tableSelect.value;

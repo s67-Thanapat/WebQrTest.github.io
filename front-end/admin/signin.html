@@ -284,7 +284,7 @@
     }
     function resolveNext(next, fallback) {
       if (next && /^https?:\/\//i.test(next)) return next;
-      const v = (next && next.trim()) || fallback || "show.html";
+      const v = (next && next.trim()) || fallback || "admin/show.html";
       return toHref(v);
     }
     async function ensureSessionReady(maxTries = 10, delayMs = 150){

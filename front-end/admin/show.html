@@ -273,7 +273,7 @@ function renderTable(){
 
 /* ---------- EVENTS ---------- */
 btnReload.onclick = async ()=>{ await loadSummary(); await loadTable(); };
-btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="login.html"; };
+btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="admin/signin.html"; };
 search.addEventListener('input', renderTable);
 
 /* ---------- EXPORT CSV ---------- */
