@@ -143,7 +143,7 @@
     sizeLabel.textContent = `ขนาด: ${QR_PX}×${QR_PX} px`;
   }
 
-  // ====== บันทึกลง DB: public.qrcodes(user_agent) ======
+  // ====== บันทึกลง DB: public.qrcodes(user_agent, code) ======
   async function savePlateToDB(plate){
     if(!supabase){
       console.warn('supabase client not ready');
@@ -152,10 +152,11 @@
       return;
     }
 
-    // ใช้ supabase-js เพื่อได้ error ที่อ่านง่าย
+    // ถ้าคอลัมน์ code มี UNIQUE constraint และอยากอัปเดตทับ ให้ใช้ upsert + onConflict: 'code'
+    // ตัวอย่าง: .upsert({ user_agent: plate, code: plate }, { onConflict: 'code' })
     const { data, error, status } = await supabase
       .from('qrcodes')
-      .insert({ user_agent: plate })
+      .insert({ user_agent: plate, code: plate })   // ✅ เติม code ด้วยค่า plate
       .select();
 
     if(error){
@@ -209,9 +210,7 @@
 
   // ====== เริ่มต้น ======
   (async function init(){
-    // log ค่าคอนฟิกไว้ช่วย debug (ดูใน Console)
     console.log('SUPABASE_URL:', SUPABASE_URL);
-
     currentPlate = "A000";  // เริ่มให้กลายเป็น A001 ในการ generate ครั้งแรก
     await generate();
     btnNow.addEventListener('click', ()=> generate({manual:true}));
