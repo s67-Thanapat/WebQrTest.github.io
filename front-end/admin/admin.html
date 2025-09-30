@@ -424,6 +424,7 @@ function renderTable(){
       const tds = COLUMNS.map(col=>{
         const colName = col.column_name;
         const val = row[colName];
+        // ❗ ปิดแก้ไขถ้าเป็นคอลัมน์ PK หรือเป็นตาราง audit_logs
         const editable = !PKCOLUMNS.includes(colName) && !isAuditTable;
         return `<td contenteditable="${editable}" data-col="${colName}" data-rowkey="${rowKey}">${escapeHTML(val)}</td>`;
       }).join('');
@@ -436,6 +437,7 @@ function renderTable(){
   }
   countLabel.textContent = `ทั้งหมด ${rows.length} แถว (จาก ${RAW_ROWS.length})`;
 
+  // ปิดปุ่ม action หากอยู่ที่ audit_logs
   setDataActions(CURRENT_TAB==='data' && CURRENT_TABLE !== AUDIT_TABLE);
 }
 
@@ -459,27 +461,6 @@ function parseRowKey(rowKey){
   return obj;
 }
 
-/* ✅ บังคับชนิดค่าตาม schema ของคอลัมน์ */
-function coerceValue(colName, raw){
-  const col = COLUMNS.find(c => c.column_name === colName);
-  const t = (col?.data_type || 'text').toLowerCase();
-
-  if(raw === undefined || raw === null || raw === '') return null;
-
-  if(t.includes('int') || t.includes('numeric') || t.includes('double') || t.includes('real')){
-    const n = Number(raw);
-    return Number.isFinite(n) ? n : null;
-  }
-  if(t.includes('boolean')){
-    return (raw === true || raw === 'true' || raw === 1 || raw === '1');
-  }
-  if(t.includes('timestamp') || t.includes('date')){
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? null : d.toISOString();
-  }
-  return String(raw);
-}
-
 /* === Audit helpers === */
 function computeDiff(oldObj={}, newObj={}){
   const diff = {};
@@ -501,6 +482,7 @@ function findOldRowByRowKey(rowKey){
 }
 async function logAudit({ action, target_table, target_pk=null, old_data=null, new_data=null, changed_columns=null, diff=null, meta=null }){
   try{
+    // ไม่ให้มีใครแก้ audit_logs จากหน้านี้ (กันพลาด)
     if(target_table === AUDIT_TABLE) return;
     const payload = {
       admin_id: CURRENT_ADMIN.id,
@@ -520,7 +502,7 @@ async function logAudit({ action, target_table, target_pk=null, old_data=null, n
 tbody.addEventListener('input', (e)=>{
   const cell = e.target.closest('td[contenteditable]');
   if(!cell) return;
-  if(CURRENT_TABLE === AUDIT_TABLE){ e.preventDefault(); return; }
+  if(CURRENT_TABLE === AUDIT_TABLE){ e.preventDefault(); return; } // safety
   const col = cell.dataset.col;
   const rowKey = cell.dataset.rowkey;
   const newVal = cell.textContent;
@@ -570,26 +552,15 @@ btnAddRow.onclick = async ()=>{
   }
 };
 
-/* ✅ ใช้ค่าที่บังคับชนิดแล้วตอน UPDATE */
 btnSaveEdits.onclick = async ()=>{
   if(CURRENT_TABLE === AUDIT_TABLE){ return; }
   if(EDIT_BUFFER.size===0){ alert("ยังไม่มีการแก้ไข"); return; }
-  for (const [rowKey, patchRaw] of EDIT_BUFFER.entries()){
+  for (const [rowKey, patch] of EDIT_BUFFER.entries()){
     try{
       const oldRow = findOldRowByRowKey(rowKey) || {};
-
-      const patch = {};
-      for(const [k,v] of Object.entries(patchRaw)){
-        patch[k] = coerceValue(k, v);
-      }
-
       let q = supabase.from(CURRENT_TABLE).update(patch);
       const keys = parseRowKey(rowKey);
-      for(const pk of PKCOLUMNS){
-        const v = coerceValue(pk, keys[pk]);
-        if(v === null){ throw new Error(`คีย์ ${pk} ว่างหรือชนิดไม่ถูกต้อง`); }
-        q = q.eq(pk, v);
-      }
+      for(const pk of PKCOLUMNS){ q = q.eq(pk, keys[pk]); }
       const { data, error } = await q.select('*').single();
       if(error) throw error;
 
@@ -602,7 +573,7 @@ btnSaveEdits.onclick = async ()=>{
         target_pk: rowKey,
         old_data: oldRow,
         new_data: newRow,
-        changed_columns: Object.keys(patch),
+        changed_columns: Object.keys(patch), // หรือ changed
         diff,
         meta: { op: 'btnSaveEdits' }
       });
@@ -617,7 +588,6 @@ btnSaveEdits.onclick = async ()=>{
   alert("บันทึกแล้ว");
 };
 
-/* ✅ ใช้ค่าที่บังคับชนิดแล้วตอน DELETE */
 btnDeleteRows.onclick = async ()=>{
   if(CURRENT_TABLE === AUDIT_TABLE){ return; }
   const checks = [...document.querySelectorAll('.row-select:checked')];
@@ -630,11 +600,7 @@ btnDeleteRows.onclick = async ()=>{
 
     let q = supabase.from(CURRENT_TABLE).delete();
     const keys = parseRowKey(rowKey);
-    for(const pk of PKCOLUMNS){
-      const v = coerceValue(pk, keys[pk]);
-      if(v === null){ alert(`ลบไม่สำเร็จ: คีย์ ${pk} ว่างหรือชนิดไม่ถูกต้อง`); return; }
-      q = q.eq(pk, v);
-    }
+    for(const pk of PKCOLUMNS){ q = q.eq(pk, keys[pk]); }
     const { error } = await q;
     if(error){ alert("ลบไม่สำเร็จ: "+error.message); return; }
 
