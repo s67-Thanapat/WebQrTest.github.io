@@ -7,31 +7,56 @@
   <style>
     .clock .date{ opacity:.75; margin-right:8px }
     .clock .time{ font-weight:800 }
-
     :root{
-      --bg:#f6f7fb; --fg:#0b1220; --muted:#64748b; --card:#ffffff; --border:#e5e7eb;
-      --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626; --success:#059669;
-      --board-h:#f1f5f9; --row-a:#ffffff; --row-b:#f9fafb; --shadow:0 10px 30px rgba(2,6,23,.06);
-      --focus:#93c5fd; --chip:#f8fafc; --ctl-h:42px;
+      /* ===== Light Minimal Palette ===== */
+      --bg:#f6f7fb;            /* พื้นหลังทั้งหน้า */
+      --fg:#0b1220;            /* สีตัวหนังสือหลัก */
+      --muted:#64748b;         /* สีข้อความรอง */
+      --card:#ffffff;          /* พื้นหลังการ์ด/แผง */
+      --border:#e5e7eb;        /* สีเส้นขอบอ่อน */
+      --accent:#2563eb;        /* ปุ่มหลัก */
+      --accent-2:#1e40af;      /* ปุ่มหลัก (hover) */
+      --danger:#dc2626;        /* ปุ่มลบ/เตือน */
+      --success:#059669;
+      --board-h:#f1f5f9;       /* header ตาราง */
+      --row-a:#ffffff;         /* แถวคี่ */
+      --row-b:#f9fafb;         /* แถวคู่ */
+      --shadow:0 10px 30px rgba(2,6,23,.06);
+      --focus:#93c5fd;
+      --chip:#f8fafc;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    body{
+      margin:0;background:var(--bg);color:var(--fg);
+      font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial
+    }
     .wrap{max-width:1200px;margin:24px auto;padding:16px}
     h1{margin:0 0 14px;font-size:26px;letter-spacing:.2px}
-    .info-bar,.bar{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
-    .chip{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700}
+    .info-bar,.bar{
+      display:flex;gap:12px;align-items:center;background:var(--card);
+      border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:var(--shadow)
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;background:var(--chip);
+      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700
+    }
     .muted{color:var(--muted)}
     .clock{margin-left:auto;font-weight:800;letter-spacing:.5px}
     .spacer{flex:1}
 
-    input[type="search"], input[type="text"], input[type="email"], input[type="datetime-local"], select, textarea{
-      height:var(--ctl-h); padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--fg);outline:none;min-width:220px;
+    input[type="search"], input[type="text"], input[type="email"],
+    input[type="datetime-local"], select, textarea{
+      padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+      background:#fff;color:var(--fg);outline:none;min-width:220px;
       transition:border-color .15s, box-shadow .15s, background .15s
     }
-    input:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--focus)}
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--accent); box-shadow:0 0 0 3px var(--focus)
+    }
+
     button{
-      height:var(--ctl-h); padding:0 14px;border:none;border-radius:12px;cursor:pointer;font-weight:700;
-      transition:transform .06s, box-shadow .15s, background-color .15s, color .15s
+      padding:10px 14px;border:none;border-radius:12px;cursor:pointer;
+      font-weight:600;transition:transform .06s ease, box-shadow .15s, background-color .15s, color .15s
     }
     button:active{transform:translateY(1px)}
     .btn{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.18)}
@@ -39,11 +64,16 @@
     .btn-ghost{background:#fff;color:var(--fg);border:1px solid var(--border)}
     .btn-ghost:hover{box-shadow:0 2px 10px rgba(2,6,23,.08)}
     .btn-del{background:var(--danger);color:#fff}
-    .btn:disabled,.btn-ghost:disabled,.btn-del:disabled{opacity:.5; cursor:not-allowed; box-shadow:none}
+    .btn:disabled,.btn-ghost:disabled,.btn-del:disabled{
+      opacity:.5; cursor:not-allowed; box-shadow:none
+    }
 
     .board{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:auto;box-shadow:var(--shadow);background:var(--card)}
     table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto;min-width:900px}
-    thead th{background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;padding:10px;border-bottom:1px solid var(--border);color:#334155;font-weight:800;position:sticky;top:0;z-index:1}
+    thead th{
+      background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;
+      padding:10px;border-bottom:1px solid var(--border);color:#334155;font-weight:800;position:sticky;top:0;z-index:1
+    }
     tbody td{padding:10px;border-bottom:1px solid var(--border);color:#0f172a;vertical-align:top}
     tbody tr:nth-child(odd){background:var(--row-a)} tbody tr:nth-child(even){background:var(--row-b)}
     td[contenteditable="true"]{outline:none}
@@ -57,38 +87,18 @@
     .tabs{display:flex; gap:8px; margin:12px 0}
     .tab{padding:8px 14px; border:1px solid var(--border); border-radius:999px; background:#fff; cursor:pointer; font-weight:700}
     .tab.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+
     .panel{display:none}
     .panel.active{display:block}
 
-    /* Audit toolbar (2 แถว) */
-    .audit-toolbar{
-      display:grid; gap:12px; align-items:end;
-      grid-template-columns: auto repeat(5, minmax(180px,1fr));
-      grid-template-areas:
-        "actions f1 f2 f3 f4 f5"
-        "pg      pg pg pg pg pg";
-      width:100%;
-    }
-    .audit-actions{grid-area:actions; display:flex; gap:10px; align-items:center; justify-self:start; justify-content:flex-start}
-    .at-f1{grid-area:f1} .at-f2{grid-area:f2} .at-f3{grid-area:f3}
-    .at-f4{grid-area:f4} .at-f5{grid-area:f5}
+    /* Audit panel extras */
     .pagination-wrap{grid-area:pg; display:flex; align-items:center; gap:8px; justify-content:flex-end}
-    .pill{display:inline-flex; align-items:center; gap:6px; padding:0 10px; height:var(--ctl-h); border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px}
-
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px}
     .diff{font-size:13px; background:#0b1220; color:#e5e7eb; padding:8px; border-radius:8px; margin-top:6px; overflow:auto}
     .k{color:#93c5fd} .v-old{color:#fca5a5} .v-new{color:#86efac}
 
-    @media (max-width:900px){
-      .audit-toolbar{
-        grid-template-columns: 1fr 1fr;
-        grid-template-areas:
-          "actions actions"
-          "f1 f2"
-          "f3 f4"
-          "f5 f5"
-          "pg pg";
-      }
-    }
+    /* Subtle soft corners on whole page blocks */
+    .info-bar,.bar,.board{backdrop-filter:saturate(120%) blur(0px)}
     @media (max-width:720px){
       .wrap{padding:12px}
       .clock{margin-left:0}
@@ -116,8 +126,9 @@
       <button id="tabAudit" class="tab" title="ประวัติการแก้ไข (อ่านอย่างเดียว)">🕵️ Audit Logs</button>
     </div>
 
-    <!-- ===== DATA ===== -->
-    <div id="panelData" class="panel active">
+    <!-- ============ PANEL: DATA ============ -->
+    <div id="panelData" class="panel active" aria-label="Data Panel">
+      <!-- Toolbar -->
       <div class="bar" style="margin-top:12px">
         <label class="muted">ตาราง</label>
         <select id="tableSelect"></select>
@@ -133,6 +144,22 @@
         <button class="btn-del" id="btnLogout">🚪 Logout</button>
       </div>
 
+      <!-- Structure / SQL -->
+      <div class="bar" style="margin-top:12px">
+        <details>
+          <summary class="muted" style="cursor:pointer">🔐 โครงสร้างตาราง (SQL สำหรับผู้ดูแล)</summary>
+          <div style="margin-top:8px">
+            <textarea id="sqlInput" class="sql-box" placeholder="ตัวอย่าง: CREATE TABLE public.demo(id uuid primary key default gen_random_uuid(), name text);"></textarea>
+            <div style="display:flex; gap:8px; margin-top:8px">
+              <button class="btn" id="btnRunSQL">รัน SQL (Edge Function)</button>
+              <div class="muted">* ต้องตั้งค่า Edge Function <span class="mono">admin-sql</span> + CORS ก่อน</div>
+            </div>
+            <pre id="sqlResult" style="margin-top:8px; background:#0b1220; color:#e5e7eb; padding:10px; border-radius:8px; max-height:240px; overflow:auto"></pre>
+          </div>
+        </details>
+      </div>
+
+      <!-- Data Table -->
       <div class="board">
         <table aria-label="ตารางข้อมูล">
           <thead id="thead"></thead>
@@ -147,39 +174,37 @@
       <div id="notice" class="notice"></div>
     </div>
 
-    <!-- ===== AUDIT (READ-ONLY) ===== -->
-    <div id="panelAudit" class="panel">
-      <div class="bar" style="margin-top:12px">
-        <div class="audit-toolbar">
-          <div class="at-f1" style="display:flex; flex-direction:column; gap:6px">
-            <label class="muted">ตาราง (target_table)</label>
-            <input id="afTable" type="text" placeholder="เช่น qrcodes (ว่าง=ทั้งหมด)" />
-          </div>
-          <div class="at-f2" style="display:flex; flex-direction:column; gap:6px">
-            <label class="muted">อีเมลแอดมิน</label>
-            <input id="afEmail" type="email" placeholder="เช่น admin@example.com (ว่าง=ทั้งหมด)" />
-          </div>
-          <div class="at-f3" style="display:flex; flex-direction:column; gap:6px">
-            <label class="muted">Action</label>
-            <select id="afAction">
-              <option value="">ทั้งหมด</option>
-              <option>INSERT</option>
-              <option>UPDATE</option>
-              <option>DELETE</option>
-              <option>SQL</option>
-            </select>
-          </div>
-          <div class="at-f4" style="display:flex; flex-direction:column; gap:6px">
-            <label class="muted">เริ่ม</label>
-            <input id="afFrom" type="datetime-local" />
-          </div>
-          <div class="at-f5" style="display:flex; flex-direction:column; gap:6px">
-            <label class="muted">ถึง</label>
-            <input id="afTo" type="datetime-local" />
-          </div>
+    <!-- ============ PANEL: AUDIT (READ-ONLY) ============ -->
+    <div id="panelAudit" class="panel" aria-label="Audit Panel (read-only)">
+      <!-- Filter bar -->
+      <div class="bar" style="margin-top:12px; gap:10px; align-items:flex-end">
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label class="muted">ตาราง (target_table)</label>
+          <input id="afTable" type="text" placeholder="เช่น qrcodes (ว่าง=ทั้งหมด)" />
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label class="muted">อีเมลแอดมิน</label>
+          <input id="afEmail" type="email" placeholder="เช่น admin@example.com (ว่าง=ทั้งหมด)" />
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label class="muted">Action</label>
+          <select id="afAction">
+            <option value="">ทั้งหมด</option>
+            <option>INSERT</option>
+            <option>UPDATE</option>
+            <option>DELETE</option>
+            <option>SQL</option>
+          </select>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label class="muted">เริ่ม</label>
+          <input id="afFrom" type="datetime-local" />
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px">
+          <label class="muted">ถึง</label>
+          <input id="afTo" type="datetime-local" />
         </div>
       </div>
-
       <!-- แถวบน: ปุ่ม (ซ้ายสุด) + ฟิลเตอร์ -->
       <div class="audit-actions" style="margin:8px 0 12px">
         <button class="btn" id="btnAuditSearch">ค้นหา</button>
@@ -187,6 +212,7 @@
         <button class="btn-ghost" id="btnAuditRefresh">รีเฟรช</button>
       </div>
 
+      <!-- Audit table -->
       <div class="board">
         <table aria-label="audit logs">
           <thead>
@@ -210,32 +236,28 @@
         <div id="auditCount" class="muted">—</div>
         <div class="muted">โหลดเมื่อ: <span id="auditLast" class="mono">—</span></div>
       </div>
-
-      <!-- เพจจิ้ง -->
+       <!-- เพจจิ้ง -->
       <div class="pagination-wrap" style="margin-top:8px">
         <div class="pill">หน้า: <span id="auditPageCur" class="mono">1</span> / <span id="auditPageMax" class="mono">1</span></div>
         <button class="btn-ghost" id="btnAuditPrev" title="ก่อนหน้า">◀</button>
         <button class="btn-ghost" id="btnAuditNext" title="ถัดไป">▶</button>
       </div>
-    </div>
   </div>
 
 <script>
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+const EDGE_BASE = "https://<YOUR-PROJECT-REF>.functions.supabase.co"; // ← เปลี่ยนเป็นของคุณ
+const EDGE_FUNC = "admin-sql";
+const ALLOW_SQL = true;
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* ---------- CONSTANTS ---------- */
-const AUDIT_TABLE = "audit_logs";
-const AUDIT_ORDER_PREF = ["event_ts","created_at","inserted_at","id"];
-const AUDIT_PAGE_SIZE = 50;
-
 const tz='Asia/Bangkok';
 const fmtTime = new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
 const fmtFull = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:tz});
 
-/* ---------- Elements (Data) ---------- */
+/* ---------- ELEMENTS: Data panel ---------- */
 const tableSelect = document.getElementById('tableSelect');
 const tableCount  = document.getElementById('tableCount');
 const userEmail   = document.getElementById('userEmail');
@@ -254,13 +276,17 @@ const notice = document.getElementById('notice');
 const clock = document.getElementById('clock');
 const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
 
-/* ---------- Tabs ---------- */
+const sqlInput = document.getElementById('sqlInput');
+const btnRunSQL = document.getElementById('btnRunSQL');
+const sqlResult = document.getElementById('sqlResult');
+
+/* ---------- ELEMENTS: Tabs ---------- */
 const tabData = document.getElementById('tabData');
 const tabAudit = document.getElementById('tabAudit');
 const panelData = document.getElementById('panelData');
 const panelAudit = document.getElementById('panelAudit');
 
-/* ---------- Audit elements ---------- */
+/* ---------- ELEMENTS: Audit panel ---------- */
 const afTable = document.getElementById('afTable');
 const afEmail = document.getElementById('afEmail');
 const afAction = document.getElementById('afAction');
@@ -268,7 +294,6 @@ const afFrom = document.getElementById('afFrom');
 const afTo = document.getElementById('afTo');
 const btnAuditSearch = document.getElementById('btnAuditSearch');
 const btnAuditReset = document.getElementById('btnAuditReset');
-const btnAuditRefresh = document.getElementById('btnAuditRefresh');
 const btnAuditPrev = document.getElementById('btnAuditPrev');
 const btnAuditNext = document.getElementById('btnAuditNext');
 const auditBody = document.getElementById('auditBody');
@@ -276,40 +301,45 @@ const auditPageCur = document.getElementById('auditPageCur');
 const auditPageMax = document.getElementById('auditPageMax');
 const auditCount = document.getElementById('auditCount');
 const auditLast = document.getElementById('auditLast');
+const btnAuditRefresh = document.getElementById('btnAuditRefresh');
 
 /* ---------- STATE ---------- */
 let CURRENT_TABLE = null;
-let COLUMNS = [];
-let PKCOLUMNS = [];
-let RAW_ROWS = [];
-let ROW_BY_KEY = new Map();       // <<< เก็บแถวจริงตาม rowKey
-let EDIT_BUFFER = new Map();
+let COLUMNS = [];      // [{column_name, data_type, is_nullable, column_default}]
+let PKCOLUMNS = [];    // ["id", ...]
+let RAW_ROWS = [];     // raw from db
+let EDIT_BUFFER = new Map(); // key: rowKey; val: {patch obj}
 
+/* ---------- AUDIT CONFIG/STATE ---------- */
+const AUDIT_TABLE = "audit_logs";
 let CURRENT_ADMIN = { id: null, email: null };
-let CURRENT_TAB = 'data';
-
+const AUDIT_PAGE_SIZE = 50;
 let auditPage = 1;
 let auditTotal = 0;
+let CURRENT_TAB = 'data';
 
-/* ---------- CLOCK + AUTH ---------- */
-
+/* ---------- CLOCK ---------- */
 function tick(){
   const now = new Date();
   clock.innerHTML = `<span class="date">${fmtDate.format(now)}</span> <b class="time">${fmtTime.format(now)}</b>`;
 }
 tick();
 setInterval(tick, 1000);
-
+/* ---------- AUTH INFO ---------- */
 (async()=>{
   const { data: { user } } = await supabase.auth.getUser();
   CURRENT_ADMIN = { id: user?.id ?? null, email: user?.email ?? 'anonymous' };
   userEmail.textContent = CURRENT_ADMIN.email ?? 'anonymous';
 })();
 
-/* ---------- Tabs control ---------- */
+/* ---------- TAB CONTROL (disable actions on Audit) ---------- */
 function setDataActions(enabled){
-  [btnAddRow, btnSaveEdits, btnDeleteRows].forEach(b=> b.disabled = !enabled);
-  notice.textContent = enabled ? "" : "ℹ️ โหมดอ่านอย่างเดียว — ปุ่มเพิ่ม/แก้/ลบถูกปิดไว้";
+  [btnAddRow, btnSaveEdits, btnDeleteRows].forEach(b=>{
+    b.disabled = !enabled;
+    b.title = enabled ? '' : 'ปิดการทำงานชั่วคราว (อ่านอย่างเดียว)';
+  });
+  if(!enabled) notice.textContent = "ℹ️ โหมดอ่านอย่างเดียว — ปุ่มเพิ่ม/แก้/ลบถูกปิดไว้";
+  else notice.textContent = "";
 }
 function setTab(name){
   CURRENT_TAB = name;
@@ -320,20 +350,20 @@ function setTab(name){
   }else{
     tabAudit.classList.add('active'); tabData.classList.remove('active');
     panelAudit.classList.add('active'); panelData.classList.remove('active');
-    setDataActions(false);
+    setDataActions(false);              // ห้ามกดเมื่ออยู่หน้า Audit
     loadAudit(true);
   }
 }
 tabData.onclick = ()=> setTab('data');
 tabAudit.onclick = ()=> setTab('audit');
 
-/* ---------- Load tables ---------- */
+/* ---------- LOAD TABLE LIST ---------- */
 async function loadTables(){
   tableSelect.innerHTML = `<option value="">กำลังโหลด…</option>`;
   try{
     const { data, error } = await supabase.rpc('list_public_tables');
     if(error) throw error;
-    tableSelect.innerHTML = `<option value="" disabled selected>— เลือกตาราง —</option>` +
+    tableSelect.innerHTML = `<option value="" disabled selected>— เลือกตาราง —</option>` + 
       data.map(r=>`<option value="${r.table_name}">${r.table_name} (${r.row_count})</option>`).join('');
     tableCount.textContent = data.length;
   }catch(e){
@@ -343,7 +373,7 @@ async function loadTables(){
   }
 }
 
-/* ---------- Structure & Data ---------- */
+/* ---------- LOAD STRUCTURE ---------- */
 async function loadStructure(table){
   const [cols, pk] = await Promise.all([
     supabase.rpc('list_columns', { p_table: table }),
@@ -354,20 +384,23 @@ async function loadStructure(table){
   COLUMNS = cols.data || [];
   PKCOLUMNS = (pk.data || []).map(x=>x.column_name);
 }
+
+/* ---------- LOAD DATA ---------- */
 async function loadData(){
   if(!CURRENT_TABLE) return;
   tbody.innerHTML = `<tr><td style="padding:12px" class="muted">⏳ กำลังโหลด…</td></tr>`;
   EDIT_BUFFER.clear();
-  const { data, error } = await supabase
-    .from(CURRENT_TABLE).select('*')
-    .limit(200)
-    .order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
-  if(error){ tbody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`; return; }
+  const { data, error } = await supabase.from(CURRENT_TABLE).select('*').limit(200).order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
+  if(error){
+    tbody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`;
+    return;
+  }
   RAW_ROWS = data || [];
-  buildRowMap();                    // <<< สร้าง map แถวจริง
   renderTable();
   lastUpdate.textContent = fmtFull.format(new Date());
 }
+
+/* ---------- RENDER TABLE ---------- */
 function renderTable(){
   const headCols = ['','_rowKey', ...COLUMNS.map(c=>c.column_name)];
   thead.innerHTML = `<tr>${headCols.map((h,i)=> {
@@ -391,6 +424,7 @@ function renderTable(){
       const tds = COLUMNS.map(col=>{
         const colName = col.column_name;
         const val = row[colName];
+        // ❗ ปิดแก้ไขถ้าเป็นคอลัมน์ PK หรือเป็นตาราง audit_logs
         const editable = !PKCOLUMNS.includes(colName) && !isAuditTable;
         return `<td contenteditable="${editable}" data-col="${colName}" data-rowkey="${rowKey}">${escapeHTML(val)}</td>`;
       }).join('');
@@ -402,184 +436,305 @@ function renderTable(){
     }).join('');
   }
   countLabel.textContent = `ทั้งหมด ${rows.length} แถว (จาก ${RAW_ROWS.length})`;
+
+  // ปิดปุ่ม action หากอยู่ที่ audit_logs
   setDataActions(CURRENT_TAB==='data' && CURRENT_TABLE !== AUDIT_TABLE);
 }
 
-/* ---------- Utils ---------- */
-function escapeHTML(v){ if(v===null || v===undefined) return ''; return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+/* ---------- UTIL ---------- */
+function escapeHTML(v){
+  if(v===null || v===undefined) return '';
+  return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+}
 function getRowKey(row){
   if(PKCOLUMNS.length===0){
     return 'ROW-' + JSON.stringify(row).length + '-' + Object.values(row).join('|').length;
   }
   return PKCOLUMNS.map(pk=>`${pk}:${row[pk]}`).join('|');
 }
-function parseRowKey(rowKey){ const obj = {}; rowKey.split('|').forEach(pair=>{ const [k,...rest] = pair.split(':'); obj[k] = rest.join(':'); }); return obj; }
+function parseRowKey(rowKey){
+  const obj = {};
+  rowKey.split('|').forEach(pair=>{
+    const [k,...rest] = pair.split(':');
+    obj[k] = rest.join(':');
+  });
+  return obj;
+}
 
-/* map แถวจริงตาม rowKey */
-function buildRowMap(){
-  ROW_BY_KEY = new Map();
-  for(const r of RAW_ROWS){
-    ROW_BY_KEY.set(getRowKey(r), r);
+/* === Audit helpers === */
+function computeDiff(oldObj={}, newObj={}){
+  const diff = {};
+  const changed = [];
+  const keys = new Set([...Object.keys(oldObj||{}), ...Object.keys(newObj||{})]);
+  for(const k of keys){
+    const ov = oldObj?.[k];
+    const nv = newObj?.[k];
+    if(String(ov ?? '') !== String(nv ?? '')){
+      changed.push(k);
+      diff[k] = { old: ov ?? null, new: nv ?? null };
+    }
+  }
+  return { changed, diff };
+}
+function findOldRowByRowKey(rowKey){
+  const keys = parseRowKey(rowKey);
+  return RAW_ROWS.find(r => PKCOLUMNS.every(pk => String(r[pk]) === String(keys[pk])));
+}
+async function logAudit({ action, target_table, target_pk=null, old_data=null, new_data=null, changed_columns=null, diff=null, meta=null }){
+  try{
+    // ไม่ให้มีใครแก้ audit_logs จากหน้านี้ (กันพลาด)
+    if(target_table === AUDIT_TABLE) return;
+    const payload = {
+      admin_id: CURRENT_ADMIN.id,
+      admin_email: CURRENT_ADMIN.email,
+      action, target_table, target_pk,
+      changed_columns, old_data, new_data, diff,
+      meta: Object.assign({ tz }, meta || {})
+    };
+    const { error } = await supabase.from(AUDIT_TABLE).insert(payload);
+    if(error) console.warn('audit log error:', error.message);
+  }catch(e){
+    console.warn('audit log failed:', e);
   }
 }
-/* คืนค่าอ็อบเจ็กต์ PK โดยรักษาชนิดข้อมูลเดิม (number/uuid/…) */
-function getPkObjFromRow(row){
-  const pk = {};
-  for(const k of PKCOLUMNS){ pk[k] = row[k]; }
-  return pk;
-}
 
-/* ---------- Audit helpers ---------- */
-function toISOLocal(dtLocal){ if(!dtLocal) return null; const dt = new Date(dtLocal); return dt.toISOString(); }
-function renderDiffCell(diff){ if(!diff || typeof diff !== 'object' || Object.keys(diff).length===0){ return '<span class="muted">—</span>'; } const lines = []; for(const k of Object.keys(diff)){ const o = diff[k]?.old, n = diff[k]?.new; lines.push(`<div><span class="k">${escapeHTML(k)}</span>: <span class="v-old">- ${escapeHTML(o)}</span> → <span class="v-new">+ ${escapeHTML(n)}</span></div>`);} return `<div class="diff">${lines.join('')}</div>`; }
-function renderMetaCell(meta){ if(!meta) return '<span class="muted">—</span>'; try{ const j = typeof meta === 'string' ? JSON.parse(meta) : meta; const kv = Object.entries(j).map(([k,v])=>`<div><span class="k">${escapeHTML(k)}</span>: ${escapeHTML(typeof v==='object'? JSON.stringify(v): String(v))}</div>`); return `<div style="font-size:13px">${kv.join('')}</div>`; }catch(_){ return `<span class="mono">${escapeHTML(String(meta))}</span>`; }}
-function fmtTS(ts){ try{ return fmtFull.format(new Date(ts)); }catch{ return ts } }
-
-/* ---------- DATA actions (ครบทุกปุ่ม) ---------- */
-btnRefresh.onclick = async ()=>{ if(!CURRENT_TABLE) return; await loadStructure(CURRENT_TABLE); await loadData(); };
-btnLogout.onclick  = async ()=>{ await supabase.auth.signOut(); window.location.href = "admin/signin.html"; };
-search.addEventListener('input', renderTable);
-tableSelect.addEventListener('change', async ()=>{
-  CURRENT_TABLE = tableSelect.value;
-  notice.textContent = (CURRENT_TABLE===AUDIT_TABLE) ? "ℹ️ กำลังดูตาราง audit_logs — โหมดอ่านอย่างเดียว (ปิดปุ่มเพิ่ม/แก้/ลบ)" : "";
-  await loadStructure(CURRENT_TABLE); await loadData();
-});
-
-/* เก็บการแก้ไขลง EDIT_BUFFER */
+/* ---------- EVENTS: Edit Buffer ---------- */
 tbody.addEventListener('input', (e)=>{
-  const td = e.target.closest('td[contenteditable="true"]');
-  if(!td) return;
-  const col = td.dataset.col;
-  const rowKey = td.dataset.rowkey;
-  const cur = EDIT_BUFFER.get(rowKey) || {};
-  cur[col] = td.textContent;
-  EDIT_BUFFER.set(rowKey, cur);
-  td.style.background = 'rgba(147,197,253,.25)';
+  const cell = e.target.closest('td[contenteditable]');
+  if(!cell) return;
+  if(CURRENT_TABLE === AUDIT_TABLE){ e.preventDefault(); return; } // safety
+  const col = cell.dataset.col;
+  const rowKey = cell.dataset.rowkey;
+  const newVal = cell.textContent;
+  const patch = EDIT_BUFFER.get(rowKey) || {};
+  patch[col] = newVal;
+  EDIT_BUFFER.set(rowKey, patch);
 });
 
-/* เพิ่มแถว */
-btnAddRow.onclick = async ()=>{
-  if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
-  if(CURRENT_TABLE===AUDIT_TABLE){ notice.textContent="ตาราง audit อ่านอย่างเดียว"; return; }
-
-  const newRow = {};
-  for(const c of COLUMNS){
-    if(PKCOLUMNS.includes(c.column_name)) continue;
-    newRow[c.column_name] = null;
-  }
-  const { error } = await supabase.from(CURRENT_TABLE).insert(newRow).select();
-  if(error){ notice.textContent = `❌ เพิ่มแถวผิดพลาด: ${error.message}`; return; }
+/* ---------- ACTIONS (DATA) ---------- */
+btnRefresh.onclick = async ()=>{
+  if(!CURRENT_TABLE) return;
+  await loadStructure(CURRENT_TABLE);
   await loadData();
-  notice.textContent = "✅ เพิ่มแถวใหม่แล้ว";
 };
 
-/* บันทึกการแก้ไข — ใช้ PK จากแถวจริง (ชนิดข้อมูลถูกต้อง) */
-btnSaveEdits.onclick = async ()=>{
-  if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
-  if(EDIT_BUFFER.size===0){ notice.textContent = "ไม่มีการแก้ไข"; return; }
+btnAddRow.onclick = async ()=>{
+  if(!CURRENT_TABLE || CURRENT_TABLE === AUDIT_TABLE) return;
+  const template = {};
+  for(const c of COLUMNS){
+    if(PKCOLUMNS.includes(c.column_name) && /default/i.test(c.column_default||'')) continue;
+    template[c.column_name] = null;
+  }
+  const raw = prompt("ใส่ JSON ของแถวใหม่ (ค่าไม่ระบุ = null):", JSON.stringify(template, null, 2));
+  if(!raw) return;
+  try{
+    const obj = JSON.parse(raw);
+    const { data, error } = await supabase.from(CURRENT_TABLE).insert(obj).select('*').single();
+    if(error) throw error;
 
-  btnSaveEdits.disabled = true;
-  let ok=0, fail=0, msg=[];
-  for(const [rowKey, changes] of EDIT_BUFFER){
-    const row = ROW_BY_KEY.get(rowKey);
-    if(!row){ fail++; msg.push(`หาแถวไม่พบ: ${rowKey}`); continue; }
-    const pkObj = getPkObjFromRow(row);
-    const { error } = await supabase.from(CURRENT_TABLE).update(changes).match(pkObj);
-    if(error){ fail++; msg.push(error.message); } else ok++;
+    const newRow = data || {};
+    const pkVal = COLUMNS.length ? (PKCOLUMNS.map(pk=>`${pk}:${newRow[pk]}`).join('|') || null) : null;
+
+    await logAudit({
+      action: 'INSERT',
+      target_table: CURRENT_TABLE,
+      target_pk: pkVal,
+      old_data: null,
+      new_data: newRow,
+      changed_columns: Object.keys(newRow),
+      diff: null,
+      meta: { op: 'btnAddRow' }
+    });
+
+    await loadData();
+  }catch(e){
+    alert("เพิ่มไม่ได้: " + (e?.message || e));
+  }
+};
+
+btnSaveEdits.onclick = async ()=>{
+  if(CURRENT_TABLE === AUDIT_TABLE){ return; }
+  if(EDIT_BUFFER.size===0){ alert("ยังไม่มีการแก้ไข"); return; }
+  for (const [rowKey, patch] of EDIT_BUFFER.entries()){
+    try{
+      const oldRow = findOldRowByRowKey(rowKey) || {};
+      let q = supabase.from(CURRENT_TABLE).update(patch);
+      const keys = parseRowKey(rowKey);
+      for(const pk of PKCOLUMNS){ q = q.eq(pk, keys[pk]); }
+      const { data, error } = await q.select('*').single();
+      if(error) throw error;
+
+      const newRow = data || {};
+      const { changed, diff } = computeDiff(oldRow, newRow);
+
+      await logAudit({
+        action: 'UPDATE',
+        target_table: CURRENT_TABLE,
+        target_pk: rowKey,
+        old_data: oldRow,
+        new_data: newRow,
+        changed_columns: Object.keys(patch), // หรือ changed
+        diff,
+        meta: { op: 'btnSaveEdits' }
+      });
+
+    }catch(e){
+      alert(`บันทึกไม่สำเร็จ (row ${rowKey}): ` + (e?.message || e));
+      return;
+    }
   }
   EDIT_BUFFER.clear();
   await loadData();
-  btnSaveEdits.disabled = false;
-  notice.textContent = `💾 บันทึกแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}: ${msg[0]||''}`:''}`;
+  alert("บันทึกแล้ว");
 };
 
-/* ลบแถวที่เลือก — ใช้ PK จากแถวจริง (จะเข้า audit) */
 btnDeleteRows.onclick = async ()=>{
-  if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
+  if(CURRENT_TABLE === AUDIT_TABLE){ return; }
   const checks = [...document.querySelectorAll('.row-select:checked')];
-  if(checks.length===0){ notice.textContent = "ยังไม่ได้เลือกแถว"; return; }
+  if(checks.length===0){ alert("ยังไม่ได้เลือกแถว"); return; }
   if(!confirm(`ลบ ${checks.length} แถว?`)) return;
 
-  btnDeleteRows.disabled = true;
-  let ok=0, fail=0, msg=[];
-  for(const ch of checks){
-    const rowKey = ch.dataset.rowkey;
-    const row = ROW_BY_KEY.get(rowKey);
-    if(!row){ fail++; msg.push(`หาแถวไม่พบ: ${rowKey}`); continue; }
-    const pkObj = getPkObjFromRow(row);
-    const { error } = await supabase.from(CURRENT_TABLE).delete().match(pkObj);
-    if(error){ fail++; msg.push(error.message); } else ok++;
+  for(const c of checks){
+    const rowKey = c.dataset.rowkey;
+    const oldRow = findOldRowByRowKey(rowKey) || null;
+
+    let q = supabase.from(CURRENT_TABLE).delete();
+    const keys = parseRowKey(rowKey);
+    for(const pk of PKCOLUMNS){ q = q.eq(pk, keys[pk]); }
+    const { error } = await q;
+    if(error){ alert("ลบไม่สำเร็จ: "+error.message); return; }
+
+    await logAudit({
+      action: 'DELETE',
+      target_table: CURRENT_TABLE,
+      target_pk: rowKey,
+      old_data: oldRow,
+      new_data: null,
+      changed_columns: oldRow ? Object.keys(oldRow) : null,
+      diff: null,
+      meta: { op: 'btnDeleteRows' }
+    });
   }
-  btnDeleteRows.disabled = false;
   await loadData();
-  notice.textContent = `🗑️ ลบแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}: ${msg[0]||''}`:''}`;
 };
 
-/* ส่งออก CSV */
-function toCSV(rows){
+btnExport.onclick = ()=>{
+  if(!RAW_ROWS.length) return;
   const cols = COLUMNS.map(c=>c.column_name);
-  const esc = v => `"${String(v??'').replaceAll('"','""')}"`;
-  const header = cols.map(esc).join(',');
-  const body = rows.map(r=> cols.map(c=> esc(r[c])).join(',')).join('\n');
-  return header + '\n' + body;
-}
-btnExport.onclick = async ()=>{
-  if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
-  const { data, error } = await supabase.from(CURRENT_TABLE).select('*');
-  if(error){ notice.textContent = `❌ ส่งออกไม่สำเร็จ: ${error.message}`; return; }
-  const csv = toCSV(data||[]);
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${CURRENT_TABLE}-${new Date().toISOString().slice(0,19)}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const header = ["_rowKey", ...cols];
+  const lines = [header.join(",")];
+  for(const row of RAW_ROWS){
+    const rk = getRowKey(row);
+    const fields = [rk, ...cols.map(c=>{
+      const v = row[c]; return `"${String(v??'').replaceAll('"','""')}"`;
+    })];
+    lines.push(fields.join(","));
+  }
+  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url; a.download=`${CURRENT_TABLE}_${Date.now()}.csv`; a.click();
+  URL.revokeObjectURL(url);
 };
 
-/* ---------- AUDIT VIEW ---------- */
-function fmtTSOrBlank(r){
-  return r.event_ts || r.created_at || r.inserted_at || '';
+btnLogout.onclick = async ()=>{
+  await supabase.auth.signOut();
+  window.location.href = "signin.html";
+};
+
+search.addEventListener('input', renderTable);
+
+tableSelect.addEventListener('change', async ()=>{
+  CURRENT_TABLE = tableSelect.value;
+  notice.textContent = (CURRENT_TABLE===AUDIT_TABLE)
+    ? "ℹ️ กำลังดูตาราง audit_logs — โหมดอ่านอย่างเดียว (ปิดปุ่มเพิ่ม/แก้/ลบ)"
+    : "";
+  await loadStructure(CURRENT_TABLE);
+  await loadData();
+});
+
+/* ---------- RUN SQL VIA EDGE FUNCTION ---------- */
+if(btnRunSQL){
+  btnRunSQL.onclick = async ()=>{
+    if(!ALLOW_SQL){ alert("ยังไม่เปิดใช้งาน Edge Function"); return; }
+    const sql = sqlInput.value.trim();
+    if(!sql) return;
+    const is_admin = true; // TODO: ตรวจสิทธิ์จริง
+    try{
+      const res = await fetch(`${EDGE_BASE}/${EDGE_FUNC}`,{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body: JSON.stringify({
+          sql, is_admin,
+          admin: CURRENT_ADMIN, tz, ts: new Date().toISOString()
+        })
+      });
+      const j = await res.json();
+      sqlResult.textContent = JSON.stringify(j,null,2);
+    }catch(e){
+      sqlResult.textContent = 'เรียกไม่สำเร็จ: ' + (e?.message || e);
+    }
+  };
 }
-async function fetchAudit({orderBy}){
+
+/* ================== AUDIT VIEWER (READ-ONLY) ================== */
+function toISOLocal(dtLocal){
+  if(!dtLocal) return null;
+  const dt = new Date(dtLocal);
+  return dt.toISOString();
+}
+function renderDiffCell(diff){
+  if(!diff || typeof diff !== 'object' || Object.keys(diff).length===0){
+    return '<span class="muted">—</span>';
+  }
+  const lines = [];
+  for(const k of Object.keys(diff)){
+    const o = diff[k]?.old, n = diff[k]?.new;
+    lines.push(`<div><span class="k">${escapeHTML(k)}</span>: <span class="v-old">- ${escapeHTML(o)}</span> → <span class="v-new">+ ${escapeHTML(n)}</span></div>`);
+  }
+  return `<div class="diff">${lines.join('')}</div>`;
+}
+function renderMetaCell(meta){
+  if(!meta) return '<span class="muted">—</span>';
+  try{
+    const j = typeof meta === 'string' ? JSON.parse(meta) : meta;
+    const kv = Object.entries(j).map(([k,v])=>`<div><span class="k">${escapeHTML(k)}</span>: ${escapeHTML(typeof v==='object'? JSON.stringify(v): String(v))}</div>`);
+    return `<div style="font-size:13px">${kv.join('')}</div>`;
+  }catch(_){
+    return `<span class="mono">${escapeHTML(String(meta))}</span>`;
+  }
+}
+function fmtTS(ts){
+  try{ return fmtFull.format(new Date(ts)); }catch{ return ts }
+}
+
+async function loadAudit(reset=false){
+  if(reset){ auditPage = 1; }
   const fromISO = toISOLocal(afFrom.value);
   const toISO = toISOLocal(afTo.value);
 
+  // นับรวมทั้งหมด
   let countQ = supabase.from(AUDIT_TABLE).select('id', { count:'exact', head:true });
   if(afTable.value) countQ = countQ.eq('target_table', afTable.value.trim());
   if(afEmail.value) countQ = countQ.eq('admin_email', afEmail.value.trim());
   if(afAction.value) countQ = countQ.eq('action', afAction.value);
-  if(orderBy && fromISO) countQ = countQ.gte(orderBy, fromISO);
-  if(orderBy && toISO)   countQ = countQ.lte(orderBy, toISO);
-  const ct = await countQ;
-  if(!ct.error && typeof ct.count === 'number') auditTotal = ct.count;
+  if(fromISO) countQ = countQ.gte('event_ts', fromISO);
+  if(toISO) countQ = countQ.lte('event_ts', toISO);
+  const { count, error: countErr } = await countQ;
+  if(countErr){ auditBody.innerHTML = `<tr><td style="padding:12px">❌ ${countErr.message}</td></tr>`; return; }
+  auditTotal = count || 0;
 
   const from = (auditPage-1)*AUDIT_PAGE_SIZE;
   const to = from + AUDIT_PAGE_SIZE - 1;
 
-  let q = supabase.from(AUDIT_TABLE).select('*').range(from, to);
-  if(orderBy) q = q.order(orderBy, { ascending:false });
-
+  let q = supabase.from(AUDIT_TABLE).select('*').order('event_ts', { ascending:false }).range(from, to);
   if(afTable.value) q = q.eq('target_table', afTable.value.trim());
   if(afEmail.value) q = q.eq('admin_email', afEmail.value.trim());
   if(afAction.value) q = q.eq('action', afAction.value);
-  if(orderBy && fromISO) q = q.gte(orderBy, fromISO);
-  if(orderBy && toISO)   q = q.lte(orderBy, toISO);
+  if(fromISO) q = q.gte('event_ts', fromISO);
+  if(toISO) q = q.lte('event_ts', toISO);
 
-  return await q;
-}
-async function loadAudit(reset=false){
-  if(reset) auditPage = 1;
-
-  let data=null, error=null;
-  for(const col of AUDIT_ORDER_PREF){
-    const r = await fetchAudit({orderBy: col});
-    if(!r.error){ data = r.data; break; }
-    if(!/does not exist/i.test(r.error?.message||'')){ error = r.error; break; }
-  }
-  if(!data && !error){
-    const r = await fetchAudit({orderBy: null});
-    data = r.data; error = r.error;
-  }
+  const { data, error } = await q;
   if(error){
     auditBody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`;
     return;
@@ -591,35 +746,46 @@ async function loadAudit(reset=false){
     auditBody.innerHTML = data.map(r=>{
       const changed = Array.isArray(r.changed_columns) ? r.changed_columns.join(', ') : (r.changed_columns ?? '—');
       const pkShow = r.target_pk ?? '—';
-      const ts = fmtTSOrBlank(r);
+      const diffHTML = renderDiffCell(r.diff);
+      const metaHTML = renderMetaCell(r.meta);
       return `<tr>
-        <td class="mono">${fmtTS(ts)}</td>
+        <td class="mono">${fmtTS(r.event_ts)}</td>
         <td><div class="mono">${escapeHTML(r.admin_email ?? '—')}</div><div class="muted mono" style="font-size:12px">${escapeHTML(r.admin_id ?? '')}</div></td>
         <td><span class="pill">${escapeHTML(r.action)}</span></td>
         <td><div><b>${escapeHTML(r.target_table)}</b></div><div class="mono muted" style="font-size:12px">${escapeHTML(pkShow)}</div></td>
         <td>${escapeHTML(changed)}</td>
-        <td>${renderDiffCell(r.diff)}</td>
-        <td>${renderMetaCell(r.meta)}</td>
+        <td>${diffHTML}</td>
+        <td>${metaHTML}</td>
       </tr>`;
     }).join('');
   }
 
-  const pageMax = Math.max(1, Math.ceil((auditTotal || data.length) / AUDIT_PAGE_SIZE));
+  const pageMax = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
   auditPageMax.textContent = String(pageMax);
   auditPageCur.textContent = String(Math.min(auditPage, pageMax));
-  auditCount.textContent = `ทั้งหมด ${auditTotal ?? data.length} รายการ`;
+  auditCount.textContent = `ทั้งหมด ${auditTotal} รายการ`;
   auditLast.textContent = fmtFull.format(new Date());
 }
 
-/* Audit events */
+/* Audit: events */
 btnAuditSearch.onclick = ()=> loadAudit(true);
-btnAuditReset.onclick = ()=>{ afTable.value=''; afEmail.value=''; afAction.value=''; afFrom.value=''; afTo.value=''; loadAudit(true); };
-btnAuditRefresh.onclick = ()=> loadAudit(false);
-btnAuditPrev.onclick = ()=>{ if(auditPage>1){ auditPage--; loadAudit(false); } };
-btnAuditNext.onclick = ()=>{ const pageMax = Math.max(1, Math.ceil((auditTotal||0) / AUDIT_PAGE_SIZE)); if(auditPage<pageMax){ auditPage++; loadAudit(false); } };
+btnAuditReset.onclick = ()=>{
+  afTable.value = ''; afEmail.value=''; afAction.value=''; afFrom.value=''; afTo.value='';
+  loadAudit(true);
+};
+btnAuditPrev.onclick = ()=>{
+  if(auditPage>1){ auditPage--; loadAudit(false); }
+};
+btnAuditNext.onclick = ()=>{
+  const pageMax = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
+  if(auditPage<pageMax){ auditPage++; loadAudit(false); }
+};
 
 /* ---------- INIT ---------- */
-(async()=>{ await loadTables(); })();
+(async()=>{
+  await loadTables();
+})();
+setInterval(()=>{}, 1000); // keep clock tick above
 </script>
 </body>
 </html>
