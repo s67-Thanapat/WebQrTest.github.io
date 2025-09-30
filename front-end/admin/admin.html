@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DB Admin • Supabase (Safe)</title>
   <style>
+    .clock .date{ opacity:.75; margin-right:8px }
+    .clock .time{ font-weight:800 }
+
     :root{
       --bg:#f6f7fb; --fg:#0b1220; --muted:#64748b; --card:#ffffff; --border:#e5e7eb;
       --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626; --success:#059669;
@@ -249,6 +252,7 @@ const countLabel = document.getElementById('countLabel');
 const lastUpdate = document.getElementById('lastUpdate');
 const notice = document.getElementById('notice');
 const clock = document.getElementById('clock');
+const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
 
 /* ---------- Tabs ---------- */
 const tabData = document.getElementById('tabData');
@@ -278,6 +282,7 @@ let CURRENT_TABLE = null;
 let COLUMNS = [];
 let PKCOLUMNS = [];
 let RAW_ROWS = [];
+let ROW_BY_KEY = new Map();       // <<< เก็บแถวจริงตาม rowKey
 let EDIT_BUFFER = new Map();
 
 let CURRENT_ADMIN = { id: null, email: null };
@@ -287,7 +292,14 @@ let auditPage = 1;
 let auditTotal = 0;
 
 /* ---------- CLOCK + AUTH ---------- */
-setInterval(()=> clock.textContent = fmtTime.format(new Date()), 1000);
+
+function tick(){
+  const now = new Date();
+  clock.innerHTML = `<span class="date">${fmtDate.format(now)}</span> <b class="time">${fmtTime.format(now)}</b>`;
+}
+tick();
+setInterval(tick, 1000);
+
 (async()=>{
   const { data: { user } } = await supabase.auth.getUser();
   CURRENT_ADMIN = { id: user?.id ?? null, email: user?.email ?? 'anonymous' };
@@ -346,9 +358,13 @@ async function loadData(){
   if(!CURRENT_TABLE) return;
   tbody.innerHTML = `<tr><td style="padding:12px" class="muted">⏳ กำลังโหลด…</td></tr>`;
   EDIT_BUFFER.clear();
-  const { data, error } = await supabase.from(CURRENT_TABLE).select('*').limit(200).order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
+  const { data, error } = await supabase
+    .from(CURRENT_TABLE).select('*')
+    .limit(200)
+    .order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
   if(error){ tbody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`; return; }
   RAW_ROWS = data || [];
+  buildRowMap();                    // <<< สร้าง map แถวจริง
   renderTable();
   lastUpdate.textContent = fmtFull.format(new Date());
 }
@@ -391,8 +407,27 @@ function renderTable(){
 
 /* ---------- Utils ---------- */
 function escapeHTML(v){ if(v===null || v===undefined) return ''; return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
-function getRowKey(row){ if(PKCOLUMNS.length===0){ return 'ROW-' + JSON.stringify(row).length + '-' + Object.values(row).join('|').length; } return PKCOLUMNS.map(pk=>`${pk}:${row[pk]}`).join('|'); }
+function getRowKey(row){
+  if(PKCOLUMNS.length===0){
+    return 'ROW-' + JSON.stringify(row).length + '-' + Object.values(row).join('|').length;
+  }
+  return PKCOLUMNS.map(pk=>`${pk}:${row[pk]}`).join('|');
+}
 function parseRowKey(rowKey){ const obj = {}; rowKey.split('|').forEach(pair=>{ const [k,...rest] = pair.split(':'); obj[k] = rest.join(':'); }); return obj; }
+
+/* map แถวจริงตาม rowKey */
+function buildRowMap(){
+  ROW_BY_KEY = new Map();
+  for(const r of RAW_ROWS){
+    ROW_BY_KEY.set(getRowKey(r), r);
+  }
+}
+/* คืนค่าอ็อบเจ็กต์ PK โดยรักษาชนิดข้อมูลเดิม (number/uuid/…) */
+function getPkObjFromRow(row){
+  const pk = {};
+  for(const k of PKCOLUMNS){ pk[k] = row[k]; }
+  return pk;
+}
 
 /* ---------- Audit helpers ---------- */
 function toISOLocal(dtLocal){ if(!dtLocal) return null; const dt = new Date(dtLocal); return dt.toISOString(); }
@@ -438,25 +473,27 @@ btnAddRow.onclick = async ()=>{
   notice.textContent = "✅ เพิ่มแถวใหม่แล้ว";
 };
 
-/* บันทึกการแก้ไข */
+/* บันทึกการแก้ไข — ใช้ PK จากแถวจริง (ชนิดข้อมูลถูกต้อง) */
 btnSaveEdits.onclick = async ()=>{
   if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
   if(EDIT_BUFFER.size===0){ notice.textContent = "ไม่มีการแก้ไข"; return; }
 
   btnSaveEdits.disabled = true;
-  let ok=0, fail=0;
+  let ok=0, fail=0, msg=[];
   for(const [rowKey, changes] of EDIT_BUFFER){
-    const pk = parseRowKey(rowKey);
-    const { error } = await supabase.from(CURRENT_TABLE).update(changes).match(pk);
-    if(error) fail++; else ok++;
+    const row = ROW_BY_KEY.get(rowKey);
+    if(!row){ fail++; msg.push(`หาแถวไม่พบ: ${rowKey}`); continue; }
+    const pkObj = getPkObjFromRow(row);
+    const { error } = await supabase.from(CURRENT_TABLE).update(changes).match(pkObj);
+    if(error){ fail++; msg.push(error.message); } else ok++;
   }
   EDIT_BUFFER.clear();
   await loadData();
   btnSaveEdits.disabled = false;
-  notice.textContent = `💾 บันทึกแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}`:''}`;
+  notice.textContent = `💾 บันทึกแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}: ${msg[0]||''}`:''}`;
 };
 
-/* ลบแถวที่เลือก */
+/* ลบแถวที่เลือก — ใช้ PK จากแถวจริง (จะเข้า audit) */
 btnDeleteRows.onclick = async ()=>{
   if(!CURRENT_TABLE){ notice.textContent = "เลือกตารางก่อน"; return; }
   const checks = [...document.querySelectorAll('.row-select:checked')];
@@ -464,15 +501,18 @@ btnDeleteRows.onclick = async ()=>{
   if(!confirm(`ลบ ${checks.length} แถว?`)) return;
 
   btnDeleteRows.disabled = true;
-  let ok=0, fail=0;
+  let ok=0, fail=0, msg=[];
   for(const ch of checks){
-    const pk = parseRowKey(ch.dataset.rowkey);
-    const { error } = await supabase.from(CURRENT_TABLE).delete().match(pk);
-    if(error) fail++; else ok++;
+    const rowKey = ch.dataset.rowkey;
+    const row = ROW_BY_KEY.get(rowKey);
+    if(!row){ fail++; msg.push(`หาแถวไม่พบ: ${rowKey}`); continue; }
+    const pkObj = getPkObjFromRow(row);
+    const { error } = await supabase.from(CURRENT_TABLE).delete().match(pkObj);
+    if(error){ fail++; msg.push(error.message); } else ok++;
   }
   btnDeleteRows.disabled = false;
   await loadData();
-  notice.textContent = `🗑️ ลบแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}`:''}`;
+  notice.textContent = `🗑️ ลบแล้ว ${ok} แถว${fail?`, ล้มเหลว ${fail}: ${msg[0]||''}`:''}`;
 };
 
 /* ส่งออก CSV */

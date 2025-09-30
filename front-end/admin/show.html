@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Admin Panel - QR Codes</title>
   <style>
+    .clock .date{ opacity:.75; margin-right:8px }
+    .clock .time{ font-weight:800 }
     :root{
       /* ===== Light Minimal Palette ===== */
       --bg:#f7f8fc;            /* พื้นหลังทั้งหน้า */
@@ -171,9 +173,17 @@ const search=document.getElementById("search");
 const countLabel=document.getElementById("countLabel");
 const lastUpdate=document.getElementById("lastUpdate");
 const notice=document.getElementById("notice");
+const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
 
 /* ---------- CLOCK ---------- */
-setInterval(()=>{ clock.textContent = fmtTime.format(new Date()); },1000);
+
+function tick(){
+  const now = new Date();
+  clock.innerHTML = `<span class="date">${fmtDate.format(now)}</span> <b class="time">${fmtTime.format(now)}</b>`;
+}
+tick();
+setInterval(tick, 1000);
+
 
 /* ---------- SUMMARY: นับจาก qrcodes ---------- */
 async function loadSummary(){
