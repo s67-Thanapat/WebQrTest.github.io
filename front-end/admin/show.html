@@ -1,316 +1,176 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Admin Panel - QR Codes</title>
-  <style>
-    .clock .date{ opacity:.75; margin-right:8px }
-    .clock .time{ font-weight:800 }
-    :root{
-      /* ===== Light Minimal Palette ===== */
-      --bg:#f7f8fc;            /* พื้นหลังทั้งหน้า */
-      --fg:#0b1220;            /* สีตัวหนังสือหลัก */
-      --muted:#6b7280;         /* สีข้อความรอง */
-      --card:#ffffff;          /* พื้นหลังการ์ด/แผง */
-      --border:#e5e7eb;        /* สีเส้นขอบอ่อน */
-      --accent:#2563eb;        /* ปุ่มหลัก */
-      --accent-2:#1e40af;      /* ปุ่มหลัก (hover) */
-      --danger:#dc2626;        /* ปุ่มลบ/เตือน */
-      --board-h:#f1f5f9;       /* หัวตาราง */
-      --row-a:#ffffff;         /* แถวคี่ */
-      --row-b:#f9fafb;         /* แถวคู่ */
-      --glow:0 6px 18px rgba(2,6,23,.06); /* เงาอ่อนๆ */
-      --focus:#93c5fd;         /* วงแหวนโฟกัส */
-      --chip:#f8fafc;          /* พื้นหลังชิปข้อมูล */
-    }
-
-    *{box-sizing:border-box}
-    body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    }
-
-    .wrap{max-width:1100px;margin:24px auto;padding:16px}
-    h1{margin:0 0 14px;font-size:22px}
-
-    /* Info bar */
-    .info-bar{
-      display:flex;gap:12px;align-items:center;background:var(--card);
-      border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:var(--glow)
-    }
-    .chip{
-      display:inline-flex;align-items:center;gap:8px;background:var(--chip);
-      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700
-    }
-    .muted{color:var(--muted)}
-    .clock{margin-left:auto;font-weight:800;letter-spacing:.5px}
-
-    /* Toolbar */
-    .bar{
-      display:flex;gap:10px;align-items:center;background:var(--card);
-      border:1px solid var(--border);padding:12px;border-radius:14px;margin-top:12px;box-shadow:var(--glow)
-    }
-    .spacer{flex:1}
-    input[type="search"]{
-      padding:10px 12px;border-radius:10px;border:1px solid var(--border);
-      background:#fff;color:var(--fg);min-width:260px;outline:none;
-      transition:border-color .15s, box-shadow .15s
-    }
-    input[type="search"]:focus{
-      border-color:var(--accent);
-      box-shadow:0 0 0 3px var(--focus);
-    }
-
-    button{
-      padding:10px 14px;border:none;border-radius:10px;cursor:pointer;font-weight:600;
-      transition:transform .05s ease, box-shadow .15s ease, background-color .15s ease, color .15s ease
-    }
-    button:active{ transform:translateY(1px) }
-    .btn{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.18)}
-    .btn:hover{background:var(--accent-2)}
-    .btn-ghost{
-      background:#fff;color:var(--fg);border:1px solid var(--border)
-    }
-    .btn-ghost:hover{ box-shadow:0 2px 10px rgba(2,6,23,.08) }
-    .btn-del{background:var(--danger);color:#fff}
-    .btn-del:hover{ filter:brightness(.95) }
-
-    /* Flight board table */
-    .board{
-      margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--glow);background:var(--card)
-    }
-    table{width:100%;border-collapse:collapse;font-size:15px;table-layout:fixed}
-    thead th{
-      background:var(--board-h);text-transform:uppercase;letter-spacing:.35px;
-      padding:12px 10px;border-bottom:1px solid var(--border);color:#334155;font-weight:700
-    }
-    tbody td{padding:12px 10px;border-bottom:1px solid var(--border);color:#0f172a}
-    tbody tr:nth-child(odd){background:var(--row-a)}
-    tbody tr:nth-child(even){background:var(--row-b)}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
-    .nowrap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-    /* จัดกลางทุกช่องของตาราง */
-    thead th, tbody td { text-align:center; vertical-align:middle; }
-
-    /* Footer + notice */
-    .foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
-    .notice{margin-top:6px;color:#b45309;font-size:13px}
-
-    /* Small screens */
-    @media (max-width:720px){
-      .wrap{padding:12px}
-      .info-bar{flex-wrap:wrap;gap:8px}
-      .clock{margin-left:0}
-      input[type="search"]{min-width:160px;flex:1}
-      .bar{flex-wrap:wrap}
-      table{font-size:14px}
-    }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Panel - QR Codes</title>
+<style>
+  :root{
+    --bg:#f7f8fc; --fg:#0b1220; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
+    --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626;
+    --board-h:#f1f5f9; --row-a:#ffffff; --row-b:#f9fafb; --glow:0 6px 18px rgba(2,6,23,.06);
+    --focus:#93c5fd; --chip:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,Segoe UI,Roboto,Arial}
+  .wrap{max-width:1100px;margin:24px auto;padding:16px}
+  h1{margin:0 0 14px;font-size:22px;text-align:center}
+  .info-bar{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:var(--glow);flex-wrap:wrap;justify-content:center}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700}
+  .clock{font-weight:800;letter-spacing:.5px}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
+  .btn:hover{background:var(--accent-2)}
+  .btn-ghost{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer}
+  .btn-del{background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
+  .board{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--glow);background:var(--card)}
+  .chart-wrap{padding:8px 16px 16px}
+  .chart-container{position:relative;height:380px;width:100%;max-width:980px;margin:8px auto}
+  .filter-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 16px 8px}
+  .base-check{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--border);padding:6px 10px;border-radius:999px}
+  .base-check input{accent-color:#2563eb}
+  .filter-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  @media(max-width:720px){.chart-container{height:300px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4"></script>
 </head>
 <body>
-  <div class="wrap">
-    <h1>ระบบหลังบ้าน - QR Codes</h1>
+<div class="wrap">
+  <h1>ระบบหลังบ้าน - QR Codes</h1>
 
-    <!-- Summary -->
-    <div class="info-bar">
-      <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers"  class="mono">—</span> คน</div>
-      <div class="chip">🗄️ จำนวนฐาน: <span id="totalTables" class="mono">—</span> ฐาน</div>
-      <div class="clock" id="clock">--:--:--</div>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="bar">
-      <button class="btn" id="btnReload">🔄 โหลดข้อมูล</button>
-      <span class="spacer"></span>
-      <input id="search" type="search" placeholder="ค้นหา (ID / Code / User Agent)" autocomplete="off" />
-      <button class="btn-ghost" id="btnExport">⬇️ ส่งออก CSV</button>
-      <button class="btn-del" id="btnLogout">🚪 Logout</button>
-    </div>
-
-    <!-- Flight-board style table -->
-    <div class="board">
-      <table aria-label="รายการ QR Codes">
-        <thead>
-          <tr>
-            <th style="width:80px">ID</th>
-            <th style="width:120px">Time</th>
-            <th>UUID</th>
-            <th>User-Code-Name</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"><tr><td colspan="4" class="muted">กำลังโหลด...</td></tr></tbody>
-      </table>
-    </div>
-
-    <div class="foot">
-      <div id="countLabel" class="muted">—</div>
-      <div class="muted">อัปเดตล่าสุด: <span id="lastUpdate">—</span></div>
-    </div>
-    <div id="notice" class="notice"></div>
+  <!-- Summary -->
+  <div class="info-bar">
+    <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers">—</span></div>
+    <div class="chip">🧩 จำนวนฐานทั้งหมด: <span id="totalBases">—</span></div>
+    <div class="chip">👤 ผู้ร่วมงานทั้งหมด: <span id="totalAttendees">—</span></div>
+    <div class="chip clock" id="clock">--:--:--</div>
+    <button class="btn-del" id="btnLogout">🚪 Logout</button>
   </div>
 
+  <!-- Chart -->
+  <div class="board">
+    <h2 style="padding:10px 16px 0">สรุปผู้ร่วมงานต่อฐาน (ติ๊กเลือกฐานได้สูงสุด 8)</h2>
+    <div class="chart-wrap">
+      <div class="filter-row">
+        <div>เลือกฐาน: <span id="selCount">0</span>/8</div>
+        <div id="baseChecks" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+        <div class="filter-actions">
+          <button class="btn-ghost" id="btnPickAll">เลือกทั้งหมด</button>
+          <button class="btn-ghost" id="btnPickNone">ไม่เลือกทั้งหมด</button>
+          <button class="btn" id="btnReload">🔄 โหลดใหม่</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="chartBase"></canvas></div>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ---------- CONFIG ---------- */
-const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const tz = 'Asia/Bangkok';
-const fmtTime = new Intl.DateTimeFormat('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
-const fmtFull = new Intl.DateTimeFormat('th-TH',{dateStyle:'medium', timeStyle:'medium', hour12:false, timeZone:tz});
+const SUPABASE_URL="https://yowjvmiosrclqstoeqat.supabase.co";
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const tz="Asia/Bangkok";
+const fmtTime=new Intl.DateTimeFormat("th-TH",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,timeZone:tz});
 
-/* ---------- ELEMENTS ---------- */
-const tbody=document.getElementById("tbody");
+/* Clock */
+setInterval(()=>{
+  document.getElementById("clock").textContent=fmtTime.format(new Date());
+},1000);
+
+/* Elements */
 const totalUsers=document.getElementById("totalUsers");
-const totalTables=document.getElementById("totalTables");
-const clock=document.getElementById("clock");
+const totalAttendees=document.getElementById("totalAttendees");
+const totalBases=document.getElementById("totalBases");
+const baseChecks=document.getElementById("baseChecks");
+const selCount=document.getElementById("selCount");
+const btnPickAll=document.getElementById("btnPickAll");
+const btnPickNone=document.getElementById("btnPickNone");
 const btnReload=document.getElementById("btnReload");
-const btnExport=document.getElementById("btnExport");
 const btnLogout=document.getElementById("btnLogout");
-const search=document.getElementById("search");
-const countLabel=document.getElementById("countLabel");
-const lastUpdate=document.getElementById("lastUpdate");
-const notice=document.getElementById("notice");
-const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
+const chartCanvas=document.getElementById("chartBase");
+let chart;
+const MAX_PICK=8;
 
-/* ---------- CLOCK ---------- */
+/* Local Storage for selected bases */
+function loadSelected(){try{return new Set(JSON.parse(localStorage.getItem("selected_booths")||"[]"))}catch{return new Set()}}
+function saveSelected(){localStorage.setItem("selected_booths",JSON.stringify([...selectedBases]))}
+let selectedBases=loadSelected();
 
-function tick(){
-  const now = new Date();
-  clock.innerHTML = `<span class="date">${fmtDate.format(now)}</span> <b class="time">${fmtTime.format(now)}</b>`;
-}
-tick();
-setInterval(tick, 1000);
+/* Main Chart Loader */
+async function loadChart(){
+  // 1. ดึง UUID ทั้งหมดจาก genqrcode
+  const {data:gq}=await supabase.from("genqrcode").select("uuid");
+  const validUUIDs=new Set((gq||[]).map(r=>r.uuid));
+  totalUsers.textContent=validUUIDs.size;
 
+  // 2. ดึงข้อมูลจาก checkins (อนุญาต booth = null)
+  const {data:ci,error}=await supabase.from("checkins").select("booth,uuid");
+  if(error){alert("โหลด checkins ไม่สำเร็จ: "+error.message);return;}
+  const rows=(ci||[]).filter(r=>r.uuid&&validUUIDs.has(r.uuid));
 
-/* ---------- SUMMARY: นับจาก qrcodes ---------- */
-async function loadSummary(){
-  try{
-    const { data, error } = await supabase.rpc("count_distinct_codes");
-    if (error) throw error;
-    if (typeof data === "number") {
-      totalUsers.textContent = data;
-    } else {
-      throw new Error("RPC returned non-number");
-    }
-  }catch(e){
-    console.warn("[summary] RPC count_distinct_codes failed, fallback to total rows:", e?.message || e);
-    try{
-      const { count, error } = await supabase
-        .from("qrcodes")
-        .select("id", { count: "exact", head: true });
-      if (error) throw error;
-      totalUsers.textContent = (typeof count === "number") ? count : "—";
-      notice.textContent = "ℹ️ แสดงจำนวนรายการทั้งหมด (fallback) — แนะนำสร้าง RPC 'count_distinct_codes' เพื่อผู้ใช้ไม่ซ้ำ";
-    }catch(e2){
-      console.warn("[summary] fallback count qrcodes failed:", e2?.message || e2);
-      totalUsers.textContent = "—";
-    }
+  // 3. รวมตามฐาน
+  const map=new Map();
+  for(const r of rows){
+    const booth=(r.booth?.trim()||"(ไม่ระบุฐาน)");
+    if(!map.has(booth)) map.set(booth,new Set());
+    map.get(booth).add(r.uuid);
   }
+  const pairs=[...map.entries()].map(([booth,set])=>({booth,count:set.size}));
+  pairs.sort((a,b)=>b.count-a.count);
+  totalAttendees.textContent=rows.length;
+  totalBases.textContent=pairs.length;
 
-  try{
-    const { data, error } = await supabase.rpc("get_table_count");
-    if (error) throw error;
-    totalTables.textContent = data ?? "—";
-  }catch(e){
-    totalTables.textContent = "—";
-  }
-}
+  // 4. Render checkbox
+  renderChecks(pairs.map(p=>p.booth));
 
-/* ---------- TABLE: last 1h (≤25) with fallback ---------- */
-let RAW=[];
-async function loadTable(){
-  tbody.innerHTML=`<tr><td colspan="4" class="muted">⏳ กำลังโหลด...</td></tr>`;
-  const prevNotice = notice.textContent;
-
-  const oneHourAgo=new Date(Date.now()-60*60*1000).toISOString();
-  let { data, error } = await supabase.from("qrcodes")
-    .select("id,code,user_agent,created_at")
-    .gte("created_at",oneHourAgo)
-    .order("created_at",{ascending:false})
-    .limit(25);
-
-  if(error){
-    tbody.innerHTML=`<tr><td colspan="4">❌ ${error.message}</td></tr>`;
-    return;
-  }
-
-  if(!data || data.length===0){
-    const res = await supabase.from("qrcodes")
-      .select("id,code,user_agent,created_at")
-      .order("created_at",{ascending:false})
-      .limit(25);
-    if(!res.error){ data = res.data; }
-    notice.textContent = prevNotice || "⚠️ ไม่มีข้อมูลใน 1 ชั่วโมงล่าสุด แสดงข้อมูลล่าสุดแทน";
-  } else {
-    notice.textContent = prevNotice || "";
-  }
-
-  RAW = data || [];
-  renderTable();
-  lastUpdate.textContent = fmtFull.format(new Date());
-}
-
-function renderTable(){
-  const q=(search.value||"").trim().toLowerCase();
-  const rows=RAW.filter(r=>{
-    if(!q) return true;
-    return String(r.id).toLowerCase().includes(q)
-        || String(r.code||"").toLowerCase().includes(q)
-        || String(r.user_agent||"").toLowerCase().includes(q);
+  // 5. Filter & Draw
+  const view=(selectedBases.size===0)?pairs.slice(0,MAX_PICK):pairs.filter(p=>selectedBases.has(p.booth)).slice(0,MAX_PICK);
+  const labels=view.map(p=>p.booth);
+  const dataVals=view.map(p=>p.count);
+  if(chart) chart.destroy();
+  chart=new Chart(chartCanvas,{
+    type:"bar",
+    data:{labels,datasets:[{label:"จำนวนคน (UUID ไม่ซ้ำ)",data:dataVals,backgroundColor:"rgba(37,99,235,.75)",borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
-
-  if(rows.length===0){
-    tbody.innerHTML=`<tr><td colspan="4" class="muted">ไม่มีข้อมูล</td></tr>`;
-  }else{
-    tbody.innerHTML = rows.map(r=>{
-      const t = r.created_at ? fmtTime.format(new Date(r.created_at)) : "-";
-      const ua = (r.user_agent||"-").replaceAll("<","&lt;").replaceAll(">","&gt;");
-      const code = (r.code??"-").toString().replaceAll("<","&lt;").replaceAll(">","&gt;");
-      return `
-        <tr>
-          <td class="mono">${r.id}</td>
-          <td class="mono">${t}</td>
-          <td class="mono nowrap" title="${code}">${code}</td>
-          <td class="nowrap" title="${ua}">${ua}</td>
-        </tr>`;
-    }).join("");
-  }
-  countLabel.textContent = `ทั้งหมด ${rows.length} รายการ (จาก ${RAW.length})`;
 }
 
-/* ---------- EVENTS ---------- */
-btnReload.onclick = async ()=>{ await loadSummary(); await loadTable(); };
-btnLogout.onclick = async ()=>{ await supabase.auth.signOut(); window.location.href="signin.html"; };
-search.addEventListener('input', renderTable);
-
-/* ---------- EXPORT CSV ---------- */
-btnExport.onclick = ()=>{
-  if(!RAW.length) return;
-  const header = ["id","time","code","user_agent"];
-  const lines = [header.join(",")];
-  RAW.forEach(r=>{
-    const t = r.created_at ? new Date(r.created_at).toISOString() : "";
-    const row = [
-      `"${r.id}"`,
-      `"${t}"`,
-      `"${(r.code??"").toString().replaceAll('"','""')}"`,
-      `"${(r.user_agent??"").replaceAll('"','""')}"`
-    ];
-    lines.push(row.join(","));
+/* Render Checkbox */
+function renderChecks(booths){
+  baseChecks.innerHTML="";
+  if(selectedBases.size===0){booths.slice(0,MAX_PICK).forEach(b=>selectedBases.add(b));saveSelected();}
+  booths.forEach(b=>{
+    const id="chk_"+b.replace(/\W/g,'_');
+    const lbl=document.createElement("label");
+    lbl.className="base-check";
+    lbl.innerHTML=`<input type="checkbox" id="${id}" ${selectedBases.has(b)?"checked":""}/> ${b}`;
+    baseChecks.appendChild(lbl);
+    lbl.querySelector("input").onchange=(e)=>{
+      if(e.target.checked){
+        if(selectedBases.size>=MAX_PICK){e.target.checked=false;return;}
+        selectedBases.add(b);
+      }else selectedBases.delete(b);
+      saveSelected();updateSelCount(booths.length);loadChart();
+    };
   });
-  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `qrcodes_${Date.now()}.csv`; a.click();
-  URL.revokeObjectURL(url);
-};
+  updateSelCount(booths.length);
+}
+function updateSelCount(total){
+  selCount.textContent=selectedBases.size;
+  const reached=selectedBases.size>=MAX_PICK;
+  baseChecks.querySelectorAll('input[type="checkbox"]').forEach(chk=>{
+    chk.disabled=!chk.checked&&reached;
+  });
+}
 
-/* ---------- INIT + AUTO REFRESH ---------- */
-(async()=>{ await loadSummary(); await loadTable(); })();
-setInterval(async()=>{ await loadSummary(); await loadTable(); }, 10000);
+/* Control Buttons */
+btnPickAll.onclick=()=>{selectedBases=new Set([...baseChecks.querySelectorAll("label")].map(l=>l.textContent.trim()));saveSelected();loadChart();}
+btnPickNone.onclick=()=>{selectedBases.clear();saveSelected();loadChart();}
+btnReload.onclick=()=>loadChart();
+btnLogout.onclick=()=>{window.location.href="signin.html";}
+
+/* Init */
+loadChart();
 </script>
 </body>
 </html>
