@@ -3,32 +3,28 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Admin Panel - QR Codes</title>
+<title>Admin Panel - Check-ins by Date (status = IN)</title>
 <style>
   :root{
     --bg:#f7f8fc; --fg:#0b1220; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
-    --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626;
-    --board-h:#f1f5f9; --row-a:#ffffff; --row-b:#f9fafb; --glow:0 6px 18px rgba(2,6,23,.06);
-    --focus:#93c5fd; --chip:#f8fafc;
+    --accent:#2563eb; --danger:#dc2626; --board-h:#f1f5f9; --glow:0 6px 18px rgba(2,6,23,.06);
+    --chip:#f8fafc;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,Segoe UI,Roboto,Arial}
   .wrap{max-width:1100px;margin:24px auto;padding:16px}
-  h1{margin:0 0 14px;font-size:22px;text-align:center}
-  .info-bar{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:var(--glow);flex-wrap:wrap;justify-content:center}
-  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700}
-  .clock{font-weight:800;letter-spacing:.5px}
-  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600}
-  .btn:hover{background:var(--accent-2)}
-  .btn-ghost{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer}
+  h1{text-align:center;margin:0 0 14px;font-size:22px}
+  .info-bar{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    box-shadow:var(--glow);padding:12px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);
+    border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700}
+  .clock{font-weight:800}
   .btn-del{background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer}
-  .board{margin-top:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--glow);background:var(--card)}
-  .chart-wrap{padding:8px 16px 16px}
+  select{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#fff;font-weight:600}
+  .board{margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--glow)}
   .chart-container{position:relative;height:380px;width:100%;max-width:980px;margin:8px auto}
-  .filter-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 16px 8px}
-  .base-check{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--border);padding:6px 10px;border-radius:999px}
-  .base-check input{accent-color:#2563eb}
-  .filter-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .muted{color:var(--muted);margin:0 16px 8px}
   @media(max-width:720px){.chart-container{height:300px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -36,141 +32,136 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>ระบบหลังบ้าน - QR Codes</h1>
+  <h1>ระบบหลังบ้าน - จำนวนการ Check-in ต่อบูธ (status = IN)</h1>
 
-  <!-- Summary -->
   <div class="info-bar">
-    <div class="chip">👥 ผู้ใช้ทั้งหมด: <span id="totalUsers">—</span></div>
-    <div class="chip">🧩 จำนวนฐานทั้งหมด: <span id="totalBases">—</span></div>
-    <div class="chip">👤 ผู้ร่วมงานทั้งหมด: <span id="totalAttendees">—</span></div>
+    <div class="chip">✅ เช็กอิน (IN): <span id="totalIn">—</span></div>
+    <div class="chip">🧩 บูธทั้งหมด: <span id="totalBooths">—</span></div>
+    <div class="chip">🧾 genqrcode ทั้งหมด: <span id="totalGenQR">—</span></div>
+    <div class="chip">📅 วันที่ในข้อมูล: <span id="selectedDateText">—</span></div>
+    <select id="dateSelect"></select>
     <div class="chip clock" id="clock">--:--:--</div>
-    <button class="btn-del" id="btnLogout">🚪 Logout</button>
+    <button class="btn-del" id="btnLogout">Logout</button>
   </div>
 
-  <!-- Chart -->
   <div class="board">
-    <h2 style="padding:10px 16px 0">สรุปผู้ร่วมงานต่อฐาน (ติ๊กเลือกฐานได้สูงสุด 8)</h2>
-    <div class="chart-wrap">
-      <div class="filter-row">
-        <div>เลือกฐาน: <span id="selCount">0</span>/8</div>
-        <div id="baseChecks" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-        <div class="filter-actions">
-          <button class="btn-ghost" id="btnPickAll">เลือกทั้งหมด</button>
-          <button class="btn-ghost" id="btnPickNone">ไม่เลือกทั้งหมด</button>
-          <button class="btn" id="btnReload">🔄 โหลดใหม่</button>
-        </div>
-      </div>
-      <div class="chart-container"><canvas id="chartBase"></canvas></div>
-    </div>
+    <h2 style="padding:12px 16px 0;margin:0">จำนวน “ครั้ง” ที่ Check-in (status = IN) แยกตามชื่อบูธ</h2>
+    <p class="muted">* ใช้ข้อมูลวันที่เลือก โดยอ้างอิงจากคอลัมน์ <b>checkin_time</b> ในตาราง <b>checkins</b></p>
+    <div class="chart-container"><canvas id="chart"></canvas></div>
   </div>
 </div>
 
 <script>
+/* ===== CONFIG ===== */
 const SUPABASE_URL="https://yowjvmiosrclqstoeqat.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
-const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-const tz="Asia/Bangkok";
-const fmtTime=new Intl.DateTimeFormat("th-TH",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false,timeZone:tz});
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const tz = "Asia/Bangkok";
+const fmtFull = new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeStyle:"medium",hour12:false,timeZone:tz});
+const fmtDateTH = new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeZone:tz});
 
-/* Clock */
-setInterval(()=>{
-  document.getElementById("clock").textContent=fmtTime.format(new Date());
-},1000);
-
-/* Elements */
-const totalUsers=document.getElementById("totalUsers");
-const totalAttendees=document.getElementById("totalAttendees");
-const totalBases=document.getElementById("totalBases");
-const baseChecks=document.getElementById("baseChecks");
-const selCount=document.getElementById("selCount");
-const btnPickAll=document.getElementById("btnPickAll");
-const btnPickNone=document.getElementById("btnPickNone");
-const btnReload=document.getElementById("btnReload");
+/* ===== ELEMENTS ===== */
+const elClock=document.getElementById("clock");
+const elTotalIn=document.getElementById("totalIn");
+const elTotalBooths=document.getElementById("totalBooths");
+const elTotalGenQR=document.getElementById("totalGenQR");
+const elDateSelect=document.getElementById("dateSelect");
+const elDateText=document.getElementById("selectedDateText");
 const btnLogout=document.getElementById("btnLogout");
-const chartCanvas=document.getElementById("chartBase");
+const canvas=document.getElementById("chart");
 let chart;
-const MAX_PICK=8;
 
-/* Local Storage for selected bases */
-function loadSelected(){try{return new Set(JSON.parse(localStorage.getItem("selected_booths")||"[]"))}catch{return new Set()}}
-function saveSelected(){localStorage.setItem("selected_booths",JSON.stringify([...selectedBases]))}
-let selectedBases=loadSelected();
+/* ===== CLOCK (วัน+เวลาแบบไทย) ===== */
+function tick(){ elClock.textContent = fmtFull.format(new Date()); }
+tick();
+setInterval(tick,1000);
 
-/* Main Chart Loader */
-async function loadChart(){
-  // 1. ดึง UUID ทั้งหมดจาก genqrcode
-  const {data:gq}=await supabase.from("genqrcode").select("uuid");
-  const validUUIDs=new Set((gq||[]).map(r=>r.uuid));
-  totalUsers.textContent=validUUIDs.size;
+/* ===== HELPER ===== */
+function normalizeBoothName(s){
+  if(!s) return "(ไม่ระบุฐาน)";
+  return s.trim().replace(/\s+/g," ").toLowerCase();
+}
+function toLocalDateOnly(iso){
+  const d=new Date(iso);
+  return d.toLocaleDateString("en-CA",{timeZone:tz}); // yyyy-MM-dd
+}
 
-  // 2. ดึงข้อมูลจาก checkins (อนุญาต booth = null)
-  const {data:ci,error}=await supabase.from("checkins").select("booth,uuid");
+/* ===== GENQRCODE SUMMARY ===== */
+async function loadGenQR(){
+  const { count } = await supabase.from("genqrcode").select("id",{count:"exact",head:true});
+  elTotalGenQR.textContent = count ?? "—";
+}
+
+/* ===== LOAD DATES FROM checkins ===== */
+async function loadAvailableDates(){
+  const { data, error } = await supabase.from("checkins").select("checkin_time").order("checkin_time",{ascending:true});
+  if(error){alert("โหลด checkin_time ไม่ได้: "+error.message);return [];}
+  const set=new Set();
+  for(const r of data){ if(r.checkin_time) set.add(toLocalDateOnly(r.checkin_time)); }
+  const list=[...set].sort();
+  elDateSelect.innerHTML=list.map(d=>`<option value="${d}">${fmtDateTH.format(new Date(d))}</option>`).join("");
+  return list;
+}
+
+/* ===== LOAD CHART ===== */
+async function loadChartByDate(dateStr){
+  await loadGenQR();
+  if(!dateStr) return;
+  elDateText.textContent = fmtDateTH.format(new Date(dateStr));
+
+  const start = new Date(dateStr+"T00:00:00+07:00").toISOString();
+  const end = new Date(new Date(dateStr+"T00:00:00+07:00").getTime()+86400000).toISOString();
+
+  const { data, error } = await supabase
+    .from("checkins")
+    .select("booth,status,checkin_time")
+    .eq("status","IN")
+    .gte("checkin_time", start)
+    .lt("checkin_time", end)
+    .range(0,99999);
+
   if(error){alert("โหลด checkins ไม่สำเร็จ: "+error.message);return;}
-  const rows=(ci||[]).filter(r=>r.uuid&&validUUIDs.has(r.uuid));
-
-  // 3. รวมตามฐาน
   const map=new Map();
-  for(const r of rows){
+  for(const r of data){
     const booth=(r.booth?.trim()||"(ไม่ระบุฐาน)");
-    if(!map.has(booth)) map.set(booth,new Set());
-    map.get(booth).add(r.uuid);
+    const norm=normalizeBoothName(booth);
+    if(!map.has(norm)) map.set(norm,{names:new Set(),count:0});
+    const o=map.get(norm);
+    o.names.add(booth);
+    o.count++;
   }
-  const pairs=[...map.entries()].map(([booth,set])=>({booth,count:set.size}));
-  pairs.sort((a,b)=>b.count-a.count);
-  totalAttendees.textContent=rows.length;
-  totalBases.textContent=pairs.length;
 
-  // 4. Render checkbox
-  renderChecks(pairs.map(p=>p.booth));
+  elTotalIn.textContent=data.length||0;
+  elTotalBooths.textContent=map.size;
+  const pairs=[...map.entries()].map(([norm,v])=>{
+    let label=[...v.names].sort((a,b)=>a.length-b.length)[0];
+    if(v.names.size>1) label+=" *";
+    return {booth:label,count:v.count};
+  }).sort((a,b)=>b.count-a.count);
 
-  // 5. Filter & Draw
-  const view=(selectedBases.size===0)?pairs.slice(0,MAX_PICK):pairs.filter(p=>selectedBases.has(p.booth)).slice(0,MAX_PICK);
-  const labels=view.map(p=>p.booth);
-  const dataVals=view.map(p=>p.count);
+  const labels=pairs.map(p=>p.booth);
+  const values=pairs.map(p=>p.count);
   if(chart) chart.destroy();
-  chart=new Chart(chartCanvas,{
+  chart=new Chart(canvas,{
     type:"bar",
-    data:{labels,datasets:[{label:"จำนวนคน (UUID ไม่ซ้ำ)",data:dataVals,backgroundColor:"rgba(37,99,235,.75)",borderRadius:8}]},
-    options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    data:{labels,datasets:[{label:"จำนวนครั้งที่ Check-in (status=IN)",data:values,
+                            backgroundColor:"rgba(37,99,235,.75)",borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{autoSkip:false}}}}
   });
 }
 
-/* Render Checkbox */
-function renderChecks(booths){
-  baseChecks.innerHTML="";
-  if(selectedBases.size===0){booths.slice(0,MAX_PICK).forEach(b=>selectedBases.add(b));saveSelected();}
-  booths.forEach(b=>{
-    const id="chk_"+b.replace(/\W/g,'_');
-    const lbl=document.createElement("label");
-    lbl.className="base-check";
-    lbl.innerHTML=`<input type="checkbox" id="${id}" ${selectedBases.has(b)?"checked":""}/> ${b}`;
-    baseChecks.appendChild(lbl);
-    lbl.querySelector("input").onchange=(e)=>{
-      if(e.target.checked){
-        if(selectedBases.size>=MAX_PICK){e.target.checked=false;return;}
-        selectedBases.add(b);
-      }else selectedBases.delete(b);
-      saveSelected();updateSelCount(booths.length);loadChart();
-    };
-  });
-  updateSelCount(booths.length);
-}
-function updateSelCount(total){
-  selCount.textContent=selectedBases.size;
-  const reached=selectedBases.size>=MAX_PICK;
-  baseChecks.querySelectorAll('input[type="checkbox"]').forEach(chk=>{
-    chk.disabled=!chk.checked&&reached;
-  });
-}
+/* ===== INIT ===== */
+btnLogout.onclick=()=>{location.href="signin.html";};
+elDateSelect.onchange=()=>loadChartByDate(elDateSelect.value);
 
-/* Control Buttons */
-btnPickAll.onclick=()=>{selectedBases=new Set([...baseChecks.querySelectorAll("label")].map(l=>l.textContent.trim()));saveSelected();loadChart();}
-btnPickNone.onclick=()=>{selectedBases.clear();saveSelected();loadChart();}
-btnReload.onclick=()=>loadChart();
-btnLogout.onclick=()=>{window.location.href="signin.html";}
-
-/* Init */
-loadChart();
+(async()=>{
+  const dates = await loadAvailableDates();
+  if(dates.length){
+    elDateSelect.value = dates[dates.length-1]; // default = ล่าสุด
+    loadChartByDate(dates[dates.length-1]);
+  }
+})();
 </script>
 </body>
 </html>
