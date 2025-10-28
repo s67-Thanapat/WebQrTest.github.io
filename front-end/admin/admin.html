@@ -5,54 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DB Admin • Supabase (Safe)</title>
   <style>
+    /* จัดให้ข้อความในหัวตารางและข้อมูลอยู่ตรงกลางทั้งหมด */
+table th, table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
     .clock .date{ opacity:.75; margin-right:8px }
     .clock .time{ font-weight:800 }
     :root{
       /* ===== Light Minimal Palette ===== */
-      --bg:#f6f7fb;            /* พื้นหลังทั้งหน้า */
-      --fg:#0b1220;            /* สีตัวหนังสือหลัก */
-      --muted:#64748b;         /* สีข้อความรอง */
-      --card:#ffffff;          /* พื้นหลังการ์ด/แผง */
-      --border:#e5e7eb;        /* สีเส้นขอบอ่อน */
-      --accent:#2563eb;        /* ปุ่มหลัก */
-      --accent-2:#1e40af;      /* ปุ่มหลัก (hover) */
-      --danger:#dc2626;        /* ปุ่มลบ/เตือน */
-      --success:#059669;
-      --board-h:#f1f5f9;       /* header ตาราง */
-      --row-a:#ffffff;         /* แถวคี่ */
-      --row-b:#f9fafb;         /* แถวคู่ */
-      --shadow:0 10px 30px rgba(2,6,23,.06);
-      --focus:#93c5fd;
-      --chip:#f8fafc;
+      --bg:#f6f7fb; --fg:#0b1220; --muted:#64748b; --card:#ffffff; --border:#e5e7eb;
+      --accent:#2563eb; --accent-2:#1e40af; --danger:#dc2626; --success:#059669;
+      --board-h:#f1f5f9; --row-a:#ffffff; --row-b:#f9fafb; --shadow:0 10px 30px rgba(2,6,23,.06);
+      --focus:#93c5fd; --chip:#f8fafc;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;background:var(--bg);color:var(--fg);
-      font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial
-    }
+    body{ margin:0;background:var(--bg);color:var(--fg);
+      font:15px/1.65 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial }
     .wrap{max-width:1200px;margin:24px auto;padding:16px}
     h1{margin:0 0 14px;font-size:26px;letter-spacing:.2px}
     .info-bar,.bar{
       display:flex;gap:12px;align-items:center;background:var(--card);
       border:1px solid var(--border);border-radius:16px;padding:12px;box-shadow:var(--shadow)
     }
-    .chip{
-      display:inline-flex;align-items:center;gap:8px;background:var(--chip);
-      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700
-    }
+    .chip{ display:inline-flex;align-items:center;gap:8px;background:var(--chip);
+      border:1px solid var(--border);padding:8px 12px;border-radius:999px;font-weight:700 }
     .muted{color:var(--muted)}
     .clock{margin-left:auto;font-weight:800;letter-spacing:.5px}
     .spacer{flex:1}
 
     input[type="search"], input[type="text"], input[type="email"],
-    input[type="datetime-local"], select, textarea{
+    input[type="datetime-local"], input[type="date"], select, textarea{
       padding:10px 12px;border-radius:12px;border:1px solid var(--border);
       background:#fff;color:var(--fg);outline:none;min-width:220px;
       transition:border-color .15s, box-shadow .15s, background .15s
     }
-    input:focus, select:focus, textarea:focus{
-      border-color:var(--accent); box-shadow:0 0 0 3px var(--focus)
-    }
+    input:focus, select:focus, textarea:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--focus) }
 
     button{
       padding:10px 14px;border:none;border-radius:12px;cursor:pointer;
@@ -64,9 +53,7 @@
     .btn-ghost{background:#fff;color:var(--fg);border:1px solid var(--border)}
     .btn-ghost:hover{box-shadow:0 2px 10px rgba(2,6,23,.08)}
     .btn-del{background:var(--danger);color:#fff}
-    .btn:disabled,.btn-ghost:disabled,.btn-del:disabled{
-      opacity:.5; cursor:not-allowed; box-shadow:none
-    }
+    .btn:disabled,.btn-ghost:disabled,.btn-del:disabled{ opacity:.5; cursor:not-allowed; box-shadow:none }
 
     .board{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:auto;box-shadow:var(--shadow);background:var(--card)}
     table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto;min-width:900px}
@@ -91,13 +78,12 @@
     .panel{display:none}
     .panel.active{display:block}
 
-    /* Audit panel extras */
-    .pagination-wrap{grid-area:pg; display:flex; align-items:center; gap:8px; justify-content:flex-end}
+    /* Audit panel extras & shared pagination */
+    .pagination-wrap{display:flex; align-items:center; gap:8px; justify-content:flex-end}
     .pill{display:inline-flex; align-items:center; gap:6px; padding:2px 8px; border:1px solid var(--border); border-radius:999px; background:#fff; font-size:12px}
     .diff{font-size:13px; background:#0b1220; color:#e5e7eb; padding:8px; border-radius:8px; margin-top:6px; overflow:auto}
     .k{color:#93c5fd} .v-old{color:#fca5a5} .v-new{color:#86efac}
 
-    /* Subtle soft corners on whole page blocks */
     .info-bar,.bar,.board{backdrop-filter:saturate(120%) blur(0px)}
     @media (max-width:720px){
       .wrap{padding:12px}
@@ -117,6 +103,7 @@
     <div class="info-bar">
       <div class="chip">📦 ตาราง: <span id="tableCount" class="mono">—</span></div>
       <div class="chip">🧑 ผู้ใช้: <span id="userEmail" class="mono">—</span></div>
+      <button class="btn-del" id="btnLogout">🚪 Logout</button>
       <div class="clock" id="clock">--:--:--</div>
     </div>
 
@@ -129,9 +116,18 @@
     <!-- ============ PANEL: DATA ============ -->
     <div id="panelData" class="panel active" aria-label="Data Panel">
       <!-- Toolbar -->
-      <div class="bar" style="margin-top:12px">
+      <div class="bar" style="margin-top:12px; flex-wrap:wrap">
         <label class="muted">ตาราง</label>
         <select id="tableSelect"></select>
+
+        <!-- ▼▼ เพิ่มตัวกรองวัน + เลือกคอลัมน์เวลา ▼▼ -->
+        <div style="display:flex; gap:8px; align-items:center">
+          <label class="muted">วัน</label>
+          <input id="dayFilter" type="date" />
+          <select id="timeColSelect" style="display:none" title="คอลัมน์เวลาที่ใช้กรอง"></select>
+          <button class="btn-ghost" id="btnClearDay" title="ล้างตัวกรองวัน">ล้างวัน</button>
+        </div>
+        <!-- ▲▲ -->
 
         <button class="btn" id="btnRefresh">รีเฟรช</button>
         <button class="btn-ghost" id="btnAddRow">เพิ่มแถว</button>
@@ -141,7 +137,7 @@
         <span class="spacer"></span>
         <input id="search" type="search" placeholder="ค้นหา (ทุกคอลัมน์)" autocomplete="off" />
         <button class="btn-ghost" id="btnExport">⬇️ CSV</button>
-        <button class="btn-del" id="btnLogout">🚪 Logout</button>
+        
       </div>
 
       <!-- Structure / SQL -->
@@ -171,6 +167,15 @@
         <div id="countLabel" class="muted">—</div>
         <div class="muted">อัปเดตล่าสุด: <span id="lastUpdate">—</span></div>
       </div>
+
+      <!-- ▼▼ เพจจิ้งฝั่ง Data (25 ต่อหน้า) ▼▼ -->
+      <div class="pagination-wrap" style="margin-top:8px">
+        <div class="pill">หน้า: <span id="dataPageCur" class="mono">1</span> / <span id="dataPageMax" class="mono">1</span></div>
+        <button class="btn-ghost" id="btnDataPrev" title="ก่อนหน้า">◀</button>
+        <button class="btn-ghost" id="btnDataNext" title="ถัดไป">▶</button>
+      </div>
+      <!-- ▲▲ -->
+
       <div id="notice" class="notice"></div>
     </div>
 
@@ -205,14 +210,11 @@
           <input id="afTo" type="datetime-local" />
         </div>
       </div>
-      <!-- แถวบน: ปุ่ม (ซ้ายสุด) + ฟิลเตอร์ -->
       <div class="audit-actions" style="margin:8px 0 12px">
         <button class="btn" id="btnAuditSearch">ค้นหา</button>
         <button class="btn-ghost" id="btnAuditReset">ล้างตัวกรอง</button>
         <button class="btn-ghost" id="btnAuditRefresh">รีเฟรช</button>
       </div>
-
-      <!-- Audit table -->
       <div class="board">
         <table aria-label="audit logs">
           <thead>
@@ -231,24 +233,23 @@
           </tbody>
         </table>
       </div>
-
       <div class="foot">
         <div id="auditCount" class="muted">—</div>
         <div class="muted">โหลดเมื่อ: <span id="auditLast" class="mono">—</span></div>
       </div>
-       <!-- เพจจิ้ง -->
       <div class="pagination-wrap" style="margin-top:8px">
         <div class="pill">หน้า: <span id="auditPageCur" class="mono">1</span> / <span id="auditPageMax" class="mono">1</span></div>
         <button class="btn-ghost" id="btnAuditPrev" title="ก่อนหน้า">◀</button>
         <button class="btn-ghost" id="btnAuditNext" title="ถัดไป">▶</button>
       </div>
+    </div>
   </div>
 
 <script>
 /* ---------- CONFIG ---------- */
 const SUPABASE_URL = "https://yowjvmiosrclqstoeqat.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlvd2p2bWlvc3JjbHFzdG9lcWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwMDc0OTksImV4cCI6MjA3MzU4MzQ5OX0.p71LqTM5gaJcpaAMMnWzLgsLNAka0nmR7BYntBiSYfU";
-const EDGE_BASE = "https://yowjvmiosrclqstoeqat.functions.supabase.co"; // ← เปลี่ยนเป็นของคุณ
+const EDGE_BASE = "https://yowjvmiosrclqstoeqat.functions.supabase.co";
 const EDGE_FUNC = "admin-sql";
 const ALLOW_SQL = true;
 
@@ -276,9 +277,19 @@ const notice = document.getElementById('notice');
 const clock = document.getElementById('clock');
 const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
 
-const sqlInput = document.getElementById('sqlInput');
-const btnRunSQL = document.getElementById('btnRunSQL');
-const sqlResult = document.getElementById('sqlResult');
+/* ▼▼ Data filters & pagination ▼▼ */
+const dayFilter = document.getElementById('dayFilter');
+const btnClearDay = document.getElementById('btnClearDay');
+const timeColSelect = document.getElementById('timeColSelect');
+const dataPageCur = document.getElementById('dataPageCur');
+const dataPageMax = document.getElementById('dataPageMax');
+const btnDataPrev = document.getElementById('btnDataPrev');
+const btnDataNext = document.getElementById('btnDataNext');
+
+const DATA_PAGE_SIZE = 25;
+let dataPage = 1;
+let TIME_COL = null; // ชื่อคอลัมน์เวลา
+/* ▲▲ */
 
 /* ---------- ELEMENTS: Tabs ---------- */
 const tabData = document.getElementById('tabData');
@@ -350,7 +361,7 @@ function setTab(name){
   }else{
     tabAudit.classList.add('active'); tabData.classList.remove('active');
     panelAudit.classList.add('active'); panelData.classList.remove('active');
-    setDataActions(false);              // ห้ามกดเมื่ออยู่หน้า Audit
+    setDataActions(false);
     loadAudit(true);
   }
 }
@@ -373,6 +384,41 @@ async function loadTables(){
   }
 }
 
+/* ---------- helper: หา time columns ---------- */
+function detectTimeColumns(){
+  const timeLikeNames = new Set(['created_at','updated_at','event_ts','ts','inserted_at','time','timestamp','date']);
+  const timeCols = COLUMNS.filter(c=>{
+    const t = (c.data_type||'').toLowerCase();
+    const byType = t.includes('timestamp') || t.includes('date');
+    const byName = timeLikeNames.has(c.column_name.toLowerCase());
+    return byType || byName;
+  }).map(c=>c.column_name);
+  return [...new Set(timeCols)];
+}
+function initTimeColUI(){
+  const cols = detectTimeColumns();
+  if(cols.length === 0){
+    TIME_COL = null;
+    timeColSelect.style.display = 'none';
+    timeColSelect.innerHTML = '';
+    dayFilter.disabled = true;
+    dayFilter.title = 'ไม่พบคอลัมน์ชนิดวันที่/เวลาในตารางนี้';
+  }else if(cols.length === 1){
+    TIME_COL = cols[0];
+    timeColSelect.style.display = 'none';
+    timeColSelect.innerHTML = '';
+    dayFilter.disabled = false;
+    dayFilter.title = `ใช้คอลัมน์เวลา: ${TIME_COL}`;
+  }else{
+    // ให้เลือกเอง
+    timeColSelect.style.display = '';
+    timeColSelect.innerHTML = cols.map(c=>`<option value="${c}">${c}</option>`).join('');
+    TIME_COL = cols[0];
+    dayFilter.disabled = false;
+    dayFilter.title = `ใช้คอลัมน์เวลา: ${TIME_COL}`;
+  }
+}
+
 /* ---------- LOAD STRUCTURE ---------- */
 async function loadStructure(table){
   const [cols, pk] = await Promise.all([
@@ -383,14 +429,36 @@ async function loadStructure(table){
   if(pk.error) throw pk.error;
   COLUMNS = cols.data || [];
   PKCOLUMNS = (pk.data || []).map(x=>x.column_name);
+  initTimeColUI(); // เตรียมตัวกรองวันตามคอลัมน์เวลา
 }
 
-/* ---------- LOAD DATA ---------- */
+/* ---------- LOAD DATA (with optional day filter) ---------- */
 async function loadData(){
   if(!CURRENT_TABLE) return;
   tbody.innerHTML = `<tr><td style="padding:12px" class="muted">⏳ กำลังโหลด…</td></tr>`;
   EDIT_BUFFER.clear();
-  const { data, error } = await supabase.from(CURRENT_TABLE).select('*').limit(200).order(PKCOLUMNS[0] || COLUMNS[0]?.column_name, {ascending:false});
+  dataPage = 1; // reset หน้าเมื่อโหลดใหม่
+
+  // สร้าง query พื้นฐาน
+  let q = supabase.from(CURRENT_TABLE).select('*');
+
+  // ถ้ามี dayFilter และ TIME_COL
+  const day = dayFilter.value; // yyyy-mm-dd (local)
+  if(day && TIME_COL){
+    const fromISO = new Date(day + 'T00:00:00');
+    const toISO   = new Date(day + 'T23:59:59.999');
+    // แปลงเป็น ISO จริง
+    const from = fromISO.toISOString();
+    const to   = toISO.toISOString();
+    q = q.gte(TIME_COL, from).lte(TIME_COL, to);
+  }
+
+  // จำกัดดิบที่ดึง (พอสำหรับค้น/แบ่งหน้าในฝั่ง client) — ปรับได้
+  const orderCol = PKCOLUMNS[0] || COLUMNS[0]?.column_name;
+  if(orderCol) q = q.order(orderCol, { ascending:false });
+  q = q.limit(1000); // เพดานสูงนิดเผื่อค้นหน้า
+
+  const { data, error } = await q;
   if(error){
     tbody.innerHTML = `<tr><td style="padding:12px">❌ ${error.message}</td></tr>`;
     return;
@@ -400,46 +468,54 @@ async function loadData(){
   lastUpdate.textContent = fmtFull.format(new Date());
 }
 
-/* ---------- RENDER TABLE ---------- */
+/* ---------- RENDER TABLE + PAGINATION ---------- */
 function renderTable(){
-  const headCols = ['','_rowKey', ...COLUMNS.map(c=>c.column_name)];
-  thead.innerHTML = `<tr>${headCols.map((h,i)=> {
-    if(i===0) return `<th style="width:44px">เลือก</th>`;
-    if(i===1) return `<th class="mono" style="min-width:120px">PK</th>`;
-    return `<th class="nowrap">${h}</th>`;
-  }).join('')}</tr>`;
+  // ✅ เอาคอลัมน์ PK ออกไปเลย (ไม่แสดงทั้งหัวและข้อมูล)
+  const headCols = ['เลือก', ...COLUMNS.map(c=>c.column_name)];
+  thead.innerHTML = `<tr>
+    <th style="width:44px">เลือก</th>
+    ${COLUMNS.map(c=>`<th class="nowrap">${c.column_name}</th>`).join('')}
+  </tr>`;
 
   const q = (search.value || '').toLowerCase();
-  const rows = RAW_ROWS.filter(obj=>{
+  const rowsFiltered = RAW_ROWS.filter(obj=>{
     if(!q) return true;
     return Object.values(obj).some(v=> String(v??'').toLowerCase().includes(q));
   });
 
-  if(rows.length===0){
-    tbody.innerHTML = `<tr><td style="padding:12px" class="muted">— ไม่มีข้อมูล —</td></tr>`;
+  // เพจจิ้ง
+  const total = rowsFiltered.length;
+  const pageMax = Math.max(1, Math.ceil(total / DATA_PAGE_SIZE));
+  if(dataPage > pageMax) dataPage = pageMax;
+  const start = (dataPage - 1) * DATA_PAGE_SIZE;
+  const end = start + DATA_PAGE_SIZE;
+  const pageRows = rowsFiltered.slice(start, end);
+
+  if(pageRows.length===0){
+    tbody.innerHTML = `<tr><td colspan="${COLUMNS.length+1}" class="muted" style="padding:12px">— ไม่มีข้อมูล —</td></tr>`;
   }else{
     const isAuditTable = (CURRENT_TABLE === AUDIT_TABLE);
-    tbody.innerHTML = rows.map(row=>{
+    tbody.innerHTML = pageRows.map(row=>{
       const rowKey = getRowKey(row);
       const tds = COLUMNS.map(col=>{
         const colName = col.column_name;
         const val = row[colName];
-        // ❗ ปิดแก้ไขถ้าเป็นคอลัมน์ PK หรือเป็นตาราง audit_logs
         const editable = !PKCOLUMNS.includes(colName) && !isAuditTable;
         return `<td contenteditable="${editable}" data-col="${colName}" data-rowkey="${rowKey}">${escapeHTML(val)}</td>`;
       }).join('');
       return `<tr>
         <td style="text-align:center"><input type="checkbox" class="row-select" data-rowkey="${rowKey}" ${isAuditTable?'disabled':''}></td>
-        <td class="mono">${rowKey}</td>
         ${tds}
       </tr>`;
     }).join('');
   }
-  countLabel.textContent = `ทั้งหมด ${rows.length} แถว (จาก ${RAW_ROWS.length})`;
 
-  // ปิดปุ่ม action หากอยู่ที่ audit_logs
-  setDataActions(CURRENT_TAB==='data' && CURRENT_TABLE !== AUDIT_TABLE);
+  countLabel.textContent = `ทั้งหมด ${rowsFiltered.length} แถว • หน้า ${dataPage}/${pageMax}`;
+  dataPageCur.textContent = String(dataPage);
+  dataPageMax.textContent = String(pageMax);
 }
+
+
 
 /* ---------- UTIL ---------- */
 function escapeHTML(v){
@@ -461,7 +537,7 @@ function parseRowKey(rowKey){
   return obj;
 }
 
-/* === Audit helpers === */
+/* === Audit helpers (คงเดิม) === */
 function computeDiff(oldObj={}, newObj={}){
   const diff = {};
   const changed = [];
@@ -482,7 +558,6 @@ function findOldRowByRowKey(rowKey){
 }
 async function logAudit({ action, target_table, target_pk=null, old_data=null, new_data=null, changed_columns=null, diff=null, meta=null }){
   try{
-    // ไม่ให้มีใครแก้ audit_logs จากหน้านี้ (กันพลาด)
     if(target_table === AUDIT_TABLE) return;
     const payload = {
       admin_id: CURRENT_ADMIN.id,
@@ -502,7 +577,7 @@ async function logAudit({ action, target_table, target_pk=null, old_data=null, n
 tbody.addEventListener('input', (e)=>{
   const cell = e.target.closest('td[contenteditable]');
   if(!cell) return;
-  if(CURRENT_TABLE === AUDIT_TABLE){ e.preventDefault(); return; } // safety
+  if(CURRENT_TABLE === AUDIT_TABLE){ e.preventDefault(); return; }
   const col = cell.dataset.col;
   const rowKey = cell.dataset.rowkey;
   const newVal = cell.textContent;
@@ -573,7 +648,7 @@ btnSaveEdits.onclick = async ()=>{
         target_pk: rowKey,
         old_data: oldRow,
         new_data: newRow,
-        changed_columns: Object.keys(patch), // หรือ changed
+        changed_columns: Object.keys(patch),
         diff,
         meta: { op: 'btnSaveEdits' }
       });
@@ -644,6 +719,33 @@ btnLogout.onclick = async ()=>{
 
 search.addEventListener('input', renderTable);
 
+/* ▼▼ Data filter & pagination events ▼▼ */
+dayFilter.addEventListener('change', async ()=>{
+  await loadData();
+});
+btnClearDay.addEventListener('click', async ()=>{
+  dayFilter.value = '';
+  await loadData();
+});
+timeColSelect.addEventListener('change', async (e)=>{
+  TIME_COL = e.target.value || null;
+  dayFilter.title = TIME_COL ? `ใช้คอลัมน์เวลา: ${TIME_COL}` : 'ไม่พบคอลัมน์เวลา';
+  await loadData();
+});
+btnDataPrev.addEventListener('click', ()=>{
+  if(dataPage>1){ dataPage--; renderTable(); }
+});
+btnDataNext.addEventListener('click', ()=>{
+  const total = RAW_ROWS.filter(obj=>{
+    const q = (search.value || '').toLowerCase();
+    if(!q) return true;
+    return Object.values(obj).some(v=> String(v??'').toLowerCase().includes(q));
+  }).length;
+  const pageMax = Math.max(1, Math.ceil(total / DATA_PAGE_SIZE));
+  if(dataPage<pageMax){ dataPage++; renderTable(); }
+});
+/* ▲▲ */
+
 tableSelect.addEventListener('change', async ()=>{
   CURRENT_TABLE = tableSelect.value;
   notice.textContent = (CURRENT_TABLE===AUDIT_TABLE)
@@ -654,6 +756,9 @@ tableSelect.addEventListener('change', async ()=>{
 });
 
 /* ---------- RUN SQL VIA EDGE FUNCTION ---------- */
+const sqlInput = document.getElementById('sqlInput');
+const btnRunSQL = document.getElementById('btnRunSQL');
+const sqlResult = document.getElementById('sqlResult');
 if(btnRunSQL){
   btnRunSQL.onclick = async ()=>{
     if(!ALLOW_SQL){ alert("ยังไม่เปิดใช้งาน Edge Function"); return; }
@@ -713,7 +818,6 @@ async function loadAudit(reset=false){
   const fromISO = toISOLocal(afFrom.value);
   const toISO = toISOLocal(afTo.value);
 
-  // นับรวมทั้งหมด
   let countQ = supabase.from(AUDIT_TABLE).select('id', { count:'exact', head:true });
   if(afTable.value) countQ = countQ.eq('target_table', afTable.value.trim());
   if(afEmail.value) countQ = countQ.eq('admin_email', afEmail.value.trim());
@@ -769,22 +873,12 @@ async function loadAudit(reset=false){
 
 /* Audit: events */
 btnAuditSearch.onclick = ()=> loadAudit(true);
-btnAuditReset.onclick = ()=>{
-  afTable.value = ''; afEmail.value=''; afAction.value=''; afFrom.value=''; afTo.value='';
-  loadAudit(true);
-};
-btnAuditPrev.onclick = ()=>{
-  if(auditPage>1){ auditPage--; loadAudit(false); }
-};
-btnAuditNext.onclick = ()=>{
-  const pageMax = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
-  if(auditPage<pageMax){ auditPage++; loadAudit(false); }
-};
+btnAuditReset.onclick = ()=>{ afTable.value = ''; afEmail.value=''; afAction.value=''; afFrom.value=''; afTo.value=''; loadAudit(true); };
+btnAuditPrev.onclick = ()=>{ if(auditPage>1){ auditPage--; loadAudit(false); } };
+btnAuditNext.onclick = ()=>{ const pageMax = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE)); if(auditPage<pageMax){ auditPage++; loadAudit(false); } };
 
 /* ---------- INIT ---------- */
-(async()=>{
-  await loadTables();
-})();
+(async()=>{ await loadTables(); })();
 setInterval(()=>{}, 1000); // keep clock tick above
 </script>
 </body>
