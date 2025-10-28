@@ -5,6 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin Panel - Check-ins by Date (status = IN)</title>
 <style>
+  /* ปุ่มกลับหน้า Admin */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #2563eb;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-back:hover {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+.btn-back svg {
+  width: 18px;
+  height: 18px;
+}
+
   :root{
     --bg:#f7f8fc; --fg:#0b1220; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
     --accent:#2563eb; --danger:#dc2626; --board-h:#f1f5f9; --glow:0 6px 18px rgba(2,6,23,.06);
@@ -43,6 +69,14 @@
   <h1>ระบบหลังบ้าน - จำนวนผู้เข้าร่วมงาน</h1>
 
   <div class="info-bar">
+    <button id="btnBackAdmin" class="btn-back" style="display:none;">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+  </svg>
+  กลับหน้า Admin
+</button>
+
+
     <div class="chip">🧾 ผู้ได้รับคิวอาร์โค้ดทั้งหมด: <span id="totalGenQR">—</span> คน</div>
     <div class="chip">✅ ลงทะเบียนเเล้ว: <span id="totalIn">—</span> คน</div>
     <div class="chip">🧩 บูธทั้งหมด: <span id="totalBooths">—</span> ฐาน</div>
@@ -71,6 +105,21 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const tz = "Asia/Bangkok";
 const fmtFull = new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeStyle:"medium",hour12:false,timeZone:tz});
 const fmtDateTH = new Intl.DateTimeFormat("th-TH",{dateStyle:"medium",timeZone:tz});
+// ตรวจว่าเข้ามาจาก admin ด้วย query ?from=admin หรือมีธงใน sessionStorage
+const backBtn = document.getElementById('btnBackAdmin');
+const params = new URLSearchParams(location.search);
+const cameFromAdmin = (params.get('from') === 'admin') || (sessionStorage.getItem('from_admin') === '1');
+
+// โชว์ปุ่มเฉพาะคนที่มาจากหน้า admin
+if (cameFromAdmin && backBtn) {
+  backBtn.style.display = 'inline-flex';
+  backBtn.onclick = () => {
+    // ล้างธงแล้วกลับหน้า admin แบบ relative
+    sessionStorage.removeItem('from_admin');
+    const url = new URL('./admin.html', location.href);
+    location.href = url.href;
+  };
+}
 
 /* 👇 เปลี่ยนให้ตรงกับคอลัมน์เวลาในตาราง genqrcode (เช่น created_at / issued_at) */
 const GENQR_TIME_COL = "created_at";

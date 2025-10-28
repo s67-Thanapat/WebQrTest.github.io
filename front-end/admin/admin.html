@@ -5,6 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DB Admin • Supabase (Safe)</title>
   <style>
+    /* ปุ่มไปหน้า Check-in (โทนเดียวกับปุ่มกลับหน้า Admin) */
+.btn-checkin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(37,99,235,.08);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-checkin:hover {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37,99,235,.25);
+  transform: translateY(-1px);
+}
+.btn-checkin svg {
+  width: 18px;
+  height: 18px;
+}
+
     /* จัดให้ข้อความในหัวตารางและข้อมูลอยู่ตรงกลางทั้งหมด */
 table th, table td {
   text-align: center;
@@ -101,7 +127,16 @@ table th, table td {
 
     <!-- Summary -->
     <div class="info-bar">
-      <div class="chip">📦 ตาราง: <span id="tableCount" class="mono">—</span></div>
+      
+      <button id="btnGoCheckin" class="btn-checkin">
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+      d="M9 5l7 7-7 7" />
+  </svg>
+  ไปหน้า Check-in
+</button>
+
+      <div class="chip">📦 มีทั้งหมด: <span id="tableCount" class="mono">—</span>ตาราง</div>
       <div class="chip">🧑 ผู้ใช้: <span id="userEmail" class="mono">—</span></div>
       <button class="btn-del" id="btnLogout">🚪 Logout</button>
       <div class="clock" id="clock">--:--:--</div>
@@ -276,6 +311,24 @@ const lastUpdate = document.getElementById('lastUpdate');
 const notice = document.getElementById('notice');
 const clock = document.getElementById('clock');
 const fmtDate = new Intl.DateTimeFormat('th-TH', { dateStyle:'medium', timeZone: tz });
+
+// เปิดหน้า show.html แบบ relative และตั้งธงใน sessionStorage + query
+const btnGoCheckin = document.getElementById('btnGoCheckin');
+if (btnGoCheckin) {
+  btnGoCheckin.onclick = () => {
+    // ตั้งธงว่ามาจากหน้า admin
+    sessionStorage.setItem('from_admin', '1');
+
+    // ใช้ URL แบบ relative ให้ทำงานได้ทั้ง Live Server และโฮสต์จริง
+    const url = new URL('./show.html', location.href);
+    url.searchParams.set('from', 'admin');
+    location.href = url.href;
+  };
+}
+
+
+
+
 
 /* ▼▼ Data filters & pagination ▼▼ */
 const dayFilter = document.getElementById('dayFilter');
