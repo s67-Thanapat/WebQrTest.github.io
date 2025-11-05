@@ -5,78 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Q-ARE-Code breaker? • UUID12 QR (Mobile)</title>
   <style>
-    :root{
-      --bg:#e5e7eb;
-      --fg:#0b0f14;
-      --card:#f9fafb;
-      --bd:rgba(0,0,0,.08);
-      --blue:#2563eb;
-      color-scheme: light;
-    }
+    :root{ --bg:#e5e7eb; --fg:#0b0f14; --card:#f9fafb; --bd:rgba(0,0,0,.08); --blue:#2563eb; color-scheme: light; }
     html, body{
-      height:100%; margin:0;
-      background:var(--bg) !important;
-      color:var(--fg) !important;
+      height:100%; margin:0; background:var(--bg) !important; color:var(--fg) !important;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
     }
-    #wrap{
-      min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:12px;
-      padding:12px 8px calc(90px + env(safe-area-inset-bottom));
-    }
+    #wrap{ min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:12px;
+      padding:12px 8px calc(90px + env(safe-area-inset-bottom)); }
     canvas{
       background:var(--card); border-radius:16px;
       box-shadow:0 10px 30px rgba(0,0,0,.08), inset 0 0 0 1px rgba(0,0,0,.04);
       touch-action:none;
     }
-
     #hud{ display:flex; gap:10px; align-items:center; justify-content:center; font-weight:600; flex-wrap:wrap; }
     .pill{ padding:6px 10px; border-radius:999px; background:#f3f4f6; border:1px solid var(--bd); }
-
     #controls{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
-
     .back-fixed{
       position:fixed; left:12px; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:1000;
       display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:12px;
       border:1px solid var(--bd); background:rgba(0,0,0,.04); color:var(--fg); font-weight:700; cursor:pointer;
     }
     .back-fixed svg{ opacity:.9 }
-
-    /* Overlay */
-    #overlay{
-      position:absolute; inset:0; display:none;
-      pointer-events:none;
-    }
+    #overlay{ position:absolute; inset:0; display:none; pointer-events:none; }
     #overlay.show{ display:block; }
     #overlay .card{
       position:absolute; left:50%; transform:translateX(-50%);
       background:rgba(0,0,0,0.5); color:#fff; padding:16px 18px; border-radius:14px; text-align:center;
-      min-width: 260px;
-      pointer-events:auto;
+      min-width:260px; pointer-events:auto;
     }
-
-    .btn{
-      display:inline-block; margin-top:10px; background:var(--blue); color:#fff; border:none;
-      border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer;
-    }
-    .btn-ghost{
-      display:inline-block; margin-top:10px; background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5);
-      border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer;
-    }
-
+    .btn{ display:inline-block; margin-top:10px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer; }
+    .btn-ghost{ display:inline-block; margin-top:10px; background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer; }
     .stage{ position:relative; display:inline-block; }
-
-    /* พรีวิว QR เฉพาะตอนเฉลย */
-    #qrPreview{
-      margin-top:10px; background:#fff; padding:8px; border-radius:10px;
-      display:none; align-items:center; gap:8px;
-    }
+    #qrPreview{ margin-top:10px; background:#fff; padding:8px; border-radius:10px; display:none; align-items:center; gap:8px; }
     #qrPreview canvas{ width:96px; height:96px; image-rendering: pixelated; border:1px solid rgba(255,255,255,.35); border-radius:6px; }
-
     #qrResult{ margin-top:10px; font-size:14px; line-height:1.4; text-align:left; }
     #guessBox{ margin-top:6px; display:none; }
     #revealBox{ margin-top:6px; display:none; }
   </style>
+
+  <!-- jsQR สำหรับลองถอด QR จากพรีวิว -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <!-- qrcode-generator สร้างเมทริกซ์ QR ฝั่ง client -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 </head>
 <body>
   <button id="backBtn" class="back-fixed" type="button" aria-label="ย้อนกลับ">
@@ -101,7 +71,7 @@
         <div id="gameOverCard" class="card">
           <div id="gameOverText" style="font-weight:800; font-size:20px; margin-bottom:6px;">Game Over • Score: 0</div>
 
-          <!-- กล่องคำถาม (ถามก่อนเฉลย) -->
+          <!-- กล่องคำถาม -->
           <div id="guessBox">
             <div style="font-weight:700; margin-bottom:6px;">เดาดูก่อนสิ!</div>
             <div style="opacity:.95">จาก QR ที่เหลืออยู่ คิดว่ายังสแกนได้ไหม?</div>
@@ -129,11 +99,13 @@
 
     <div id="controls">
       <div class="pill"><b>UUID12:</b> <code id="uuidText" style="font-weight:700"></code></div>
+      <button id="bleConnectBtn" class="pill" type="button" style="cursor:pointer;">🔗 Connect ESP32 (BLE)</button>
+      <span id="bleStatus" class="pill">BLE: <b>disconnected</b></span>
     </div>
   </div>
 
   <script>
-  // ----- setup -----
+  // ===== setup =====
   const canvas=document.getElementById('game');
   const ctx=canvas.getContext('2d');
 
@@ -163,19 +135,21 @@
   const ROUND_TIME = 30.0;
   const KEY_HISCORE = 'qr_breaker_hiscore_v1';
 
+  window.guessChosen = false;     // โหมดเดาแบบสองจังหวะ
+
   const state={
     running:false, level:1, score:0, lives:1,
     paddle:{x:canvas.width/2, y:canvas.height-100, w:70, h:12, speed:9},
     ball:{x:canvas.width/2, y:canvas.height-120, r:6, vx:0, vy:0, speed:5},
     bricks:[], gridMeta:null,
-    qrImg:null, currentMatrix:null,
+    currentMatrix:null,
     gridScale:0.8,
     effects:[],
     timeLeft: ROUND_TIME,
     lastTS: null,
     showGameOver:false,
     shake:{ time:0, magnitude:0 },
-    userGuess:null // true = เดาว่าอ่านได้, false = เดาว่าอ่านไม่ได้
+    userGuess:null
   };
 
   // ---- responsive ----
@@ -205,10 +179,8 @@
       if(e.kind==='ring'){
         ctx.save(); ctx.globalAlpha = e.alpha; ctx.lineWidth = e.lineWidth; ctx.strokeStyle = e.color;
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
-
         ctx.save(); ctx.globalAlpha = e.alpha*0.6; ctx.lineWidth = Math.max(1, e.lineWidth-1); ctx.strokeStyle = '#ffffff';
         ctx.beginPath(); ctx.arc(e.x, e.y, e.r*0.65, 0, Math.PI*2); ctx.stroke(); ctx.restore();
-
         e.r += e.growth; e.alpha *= e.decay;
         if(e.alpha < 0.04) state.effects.splice(i,1);
       } else if(e.kind==='spark'){
@@ -220,7 +192,6 @@
     }
   }
   function drawUI(){}
-
   function drawFrame(){ ctx.clearRect(0,0,canvas.width,canvas.height); drawBricks(); drawEffects(); drawPaddle(); drawBall(); drawUI(); }
 
   // ---- gameplay core ----
@@ -232,75 +203,60 @@
       b.vx=Math.cos(angle)*b.speed; b.vy=Math.sin(angle)*b.speed;
     }
   }
-  function updateHud(){ scoreEl.textContent=state.score; livesEl.textContent=state.lives; timeEl.textContent = Math.max(0, state.timeLeft).toFixed(1); hiscoreEl.textContent = getHiScore(); }
+  function updateHud(){ scoreEl.textContent=state.score; livesEl.textContent=state.lives; timeEl.textContent=Math.max(0, state.timeLeft).toFixed(1); hiscoreEl.textContent=getHiScore(); }
   function newRound(resetUUID=true){
     state.level=1; state.score=0; state.lives=1; state.timeLeft=ROUND_TIME;
     state.lastTS=null; state.effects.length=0; state.showGameOver=false;
     state.shake.time=0; state.shake.magnitude=0;
     state.userGuess=null;
+    window.guessChosen=false;
     overlay.classList.remove('show');
-    // ซ่อนทุกอย่างของ overlay
-    guessBox.style.display='none';
-    revealBox.style.display='none';
-    qrPreviewBox.style.display='none';
+    guessBox.style.display='none'; revealBox.style.display='none'; qrPreviewBox.style.display='none';
     qrResultBox.innerHTML=''; qrStatusText.textContent='';
     updateHud();
     state.paddle.y = canvas.height-80;
     state.ball.y = state.paddle.y - state.paddle.h/2 - state.ball.r - 2;
-    resetBall(true);
-    state.running=false;
+    resetBall(true); state.running=false;
     if(resetUUID){ makeQRFromUUID(); }
-    drawFrame();
-    placeGameOverCard();
+    drawFrame(); placeGameOverCard();
   }
-  function gameOver(reason){
+  function gameOver(){
     state.running=false; state.showGameOver=true;
-    const hs = getHiScore(); if(state.score > hs) setHiScore(state.score);
-    gameOverTextEl.textContent = `Game Over • Score: ${state.score}`;
+    const hs=getHiScore(); if(state.score>hs) setHiScore(state.score);
+    gameOverTextEl.textContent=`Game Over • Score: ${state.score}`;
     placeGameOverCard();
-    // โชว์ overlay + กล่อง "ถามก่อนเฉลย"
     overlay.classList.add('show');
     guessBox.style.display='block';
-    revealBox.style.display='none';
-    qrPreviewBox.style.display='none';
+    revealBox.style.display='none'; qrPreviewBox.style.display='none';
     qrResultBox.innerHTML=''; qrStatusText.textContent='';
     drawFrame();
   }
 
   function addReflectFlashStrong(cx, cy, baseR){
-    const ringColor = '#7dd3fc';
-    state.effects.push({ kind:'ring', x: cx, y: cy, r: Math.max(3, baseR*0.4), growth: Math.max(2.2, baseR*0.25), alpha: 0.9, decay: 0.88, lineWidth: 3, color: ringColor });
-    state.effects.push({ kind:'ring', x: cx, y: cy, r: Math.max(2, baseR*0.22), growth: Math.max(1.7, baseR*0.20), alpha: 0.75, decay: 0.88, lineWidth: 2, color: '#93c5fd' });
+    const ringColor='#7dd3fc';
+    state.effects.push({ kind:'ring', x:cx, y:cy, r:Math.max(3, baseR*0.4), growth:Math.max(2.2, baseR*0.25), alpha:0.9, decay:0.88, lineWidth:3, color:ringColor });
+    state.effects.push({ kind:'ring', x:cx, y:cy, r:Math.max(2, baseR*0.22), growth:Math.max(1.7, baseR*0.20), alpha:0.75, decay:0.88, lineWidth:2, color:'#93c5fd' });
     for(let i=0;i<8;i++){
-      const angle = Math.random()*Math.PI*2;
-      state.effects.push({ kind:'spark', x: cx, y: cy, angle, len: Math.max(8, baseR*0.8)*(0.7+Math.random()*0.6), speed: 1.8 + Math.random()*1.2, alpha: 0.9, color: '#ffffff' });
+      const angle=Math.random()*Math.PI*2;
+      state.effects.push({ kind:'spark', x:cx, y:cy, angle, len:Math.max(8, baseR*0.8)*(0.7+Math.random()*0.6), speed:1.8+Math.random()*1.2, alpha:0.9, color:'#ffffff' });
     }
   }
-  function startShake(duration, magnitude){ state.shake.time = duration; state.shake.magnitude = magnitude; }
-
   function step(ts){
     requestAnimationFrame(step);
     const p=state.paddle, b=state.ball;
-
-    if(state.lastTS==null) state.lastTS = ts;
-    const dt = (ts - state.lastTS)/1000; state.lastTS = ts;
+    if(state.lastTS==null) state.lastTS=ts;
+    const dt=(ts-state.lastTS)/1000; state.lastTS=ts;
 
     if(state.showGameOver){ drawFrame(); return; }
-
     if(state.running){
-      state.timeLeft -= dt;
-      if(state.timeLeft<=0){ state.timeLeft=0; updateHud(); gameOver('timeup'); return; }
+      state.timeLeft-=dt; if(state.timeLeft<=0){ state.timeLeft=0; updateHud(); gameOver(); return; }
     }
     updateHud();
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // อินพุตจาก BLE
+    if (window.bleDir !== 0) movePaddle(window.bleDir);
 
-    if(state.shake.time > 0){
-      state.shake.time -= dt;
-      const dx = (Math.random()*2-1) * state.shake.magnitude;
-      const dy = (Math.random()*2-1) * state.shake.magnitude;
-      ctx.save(); ctx.translate(dx, dy);
-    } else { ctx.save(); }
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
     if(b.vx===0 && b.vy===0){ b.x=p.x; b.y=p.y - p.h/2 - b.r - 2; }
     b.x+=b.vx; b.y+=b.vy;
@@ -308,9 +264,9 @@
     if(b.x-b.r<0){ b.x=b.r; b.vx*=-1; }
     if(b.x+b.r>canvas.width){ b.x=canvas.width-b.r; b.vx*=-1; }
     if(b.y-b.r<0){ b.y=b.r; b.vy*=-1; }
-    if(b.y-b.r>canvas.height){ state.lives=0; updateHud(); ctx.restore(); gameOver('dead'); return; }
+    if(b.y-b.r>canvas.height){ state.lives=0; updateHud(); gameOver(); return; }
 
-    // Paddle
+    // Paddle collision
     if(b.y+b.r>=p.y-p.h/2 && b.y-b.r<=p.y+p.h/2 && b.x>=p.x-p.w/2 && b.x<=p.x+p.w/2 && b.vy>0){
       const hitPos=(b.x-p.x)/(p.w/2);
       const angle=hitPos*(Math.PI/3);
@@ -320,31 +276,30 @@
       if(b.vy>0) b.vy*=-1;
     }
 
-    // Bricks (hp=2)
+    // Bricks
     for(const br of state.bricks){
       if(br.hp<=0 || br.cleared) continue;
       if(circleRectOverlap(b.x,b.y,b.r,br.x,br.y,br.w,br.h)){
-        const dxL=Math.abs((br.x) - (b.x + b.r));
-        const dxR=Math.abs((b.x - b.r) - (br.x + br.w));
-        const dyT=Math.abs((br.y) - (b.y + b.r));
-        const dyB=Math.abs((b.y - b.r) - (br.y + br.h));
+        const dxL=Math.abs((br.x)-(b.x+b.r));
+        const dxR=Math.abs((b.x-b.r)-(br.x+br.w));
+        const dyT=Math.abs((br.y)-(b.y+b.r));
+        const dyB=Math.abs((b.y-b.r)-(br.y+br.h));
         const minPen=Math.min(dxL,dxR,dyT,dyB);
         if(minPen===dxL||minPen===dxR) b.vx*=-1; else b.vy*=-1;
 
-        const hitX = Math.max(br.x, Math.min(b.x, br.x+br.w));
-        const hitY = Math.max(br.y, Math.min(b.y, br.y+br.h));
+        const hitX=Math.max(br.x, Math.min(b.x, br.x+br.w));
+        const hitY=Math.max(br.y, Math.min(b.y, br.y+br.h));
         addReflectFlashStrong(hitX, hitY, Math.min(br.w, br.h));
 
         br.hp -= 1;
         if (br.hp <= 0){ br.cleared = true; state.score += 10; }
-        else { state.score += 3; startShake(0.15, 4); }
+        else { state.score += 3; }
         updateHud();
         break;
       }
     }
 
     drawBricks(); drawEffects(); drawPaddle(); drawBall(); drawUI();
-    ctx.restore();
   }
 
   function circleRectOverlap(cx,cy,r,rx,ry,rw,rh){
@@ -352,7 +307,7 @@
     const dx=cx-nx, dy=cy-ny; return dx*dx+dy*dy<=r*r;
   }
 
-  // ---- controls (Pointer + mouse fallback) ----
+  // ---- controls (Keyboard + Pointer) ----
   function movePaddle(dirOrX){
     const p=state.paddle;
     if(typeof dirOrX==='number' && Math.abs(dirOrX)<=1){ p.x+=dirOrX*p.speed*2.2; }
@@ -367,82 +322,51 @@
     if(e.key===' ')          launch();
   });
 
-  let activePointerId = null;
+  let activePointerId=null;
   function pointerToCanvasX(e){
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=canvas.width/rect.width;
     return (e.clientX - rect.left) * scaleX;
   }
   canvas.addEventListener('pointermove', e=>{
-    if (activePointerId === null || activePointerId === e.pointerId || e.pointerType === 'mouse'){
+    if (activePointerId===null || activePointerId===e.pointerId || e.pointerType==='mouse'){
       movePaddle(pointerToCanvasX(e));
     }
   }, {passive:true});
   canvas.addEventListener('pointerdown', e=>{
-    activePointerId = e.pointerId; canvas.setPointerCapture(activePointerId);
+    activePointerId=e.pointerId; canvas.setPointerCapture(activePointerId);
     movePaddle(pointerToCanvasX(e)); launch();
   });
   canvas.addEventListener('pointerup', e=>{
-    if (activePointerId === e.pointerId){ canvas.releasePointerCapture(activePointerId); activePointerId = null; }
+    if (activePointerId===e.pointerId){ canvas.releasePointerCapture(activePointerId); activePointerId=null; }
   });
   canvas.addEventListener('pointercancel', e=>{
-    if (activePointerId === e.pointerId){ activePointerId = null; }
+    if (activePointerId===e.pointerId){ activePointerId=null; }
   });
 
-  // mousemove ระดับ window (กันเคส pointer งอแง)
-  window.addEventListener('mousemove', (e)=>{
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
-    const inside = e.clientY >= rect.top && e.clientY <= rect.bottom && e.clientX >= rect.left && e.clientX <= rect.right;
-    if (!inside) return;
-    const scaleX = canvas.width / rect.width;
-    movePaddle((e.clientX - rect.left) * scaleX);
-  }, {passive:true});
-
-  // ---- QR + HiScore helpers ----
+  // ---- QR helpers ----
   function uuid12(){
     const bytes=(crypto&&crypto.getRandomValues)?crypto.getRandomValues(new Uint8Array(6)):new Uint8Array(6).map(()=>Math.floor(Math.random()*256));
     return Array.from(bytes).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
-  function getHiScore(){ const v = parseInt(localStorage.getItem(KEY_HISCORE)||'0',10); return Number.isFinite(v)?v:0; }
-  function setHiScore(v){ localStorage.setItem(KEY_HISCORE, String(v)); hiscoreEl.textContent = v; }
-  function loadImage(url){ return new Promise(resolve=>{ const img=new Image(); img.onload=()=>resolve(img); img.src=url; img.crossOrigin='anonymous'; }); }
+  function getHiScore(){ const v=parseInt(localStorage.getItem(KEY_HISCORE)||'0',10); return Number.isFinite(v)?v:0; }
+  function setHiScore(v){ localStorage.setItem(KEY_HISCORE, String(v)); hiscoreEl.textContent=v; }
+
+  function qrMatrixFromText(text, ecc='M'){
+    const qr=qrcode(0, ecc); qr.addData(text); qr.make();
+    const n=qr.getModuleCount();
+    const mat=[];
+    for(let r=0;r<n;r++){ const row=[]; for(let c=0;c<n;c++){ row.push(qr.isDark(r,c)?1:0); } mat.push(row); }
+    return mat;
+  }
 
   async function makeQRFromUUID(){
     const id=uuid12();
     uuidText.textContent=id;
-    const url=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(id)}&ecc=M&margin=0`;
-    const img=await loadImage(url); state.qrImg=img;
-    const thresh=128;
-    state.currentMatrix=await imageToMatrix(img, null, 0, thresh);
+    state.currentMatrix=qrMatrixFromText(id, 'M');
     buildBricksFromMatrix(state.currentMatrix);
     resetBall(true); state.running=false; updateHud(); drawFrame();
     placeGameOverCard();
-  }
-
-  async function imageToMatrix(img, modules, quietPx, thresh){
-    const off=document.createElement('canvas'); const N=Math.max(img.width,img.height);
-    off.width=off.height=N; const octx=off.getContext('2d');
-    const sc=Math.min(N/img.width, N/img.height); const w=img.width*sc, h=img.height*sc;
-    octx.fillStyle='#fff'; octx.fillRect(0,0,N,N);
-    octx.drawImage(img,(N-w)/2,(N-h)/2,w,h);
-    if(!modules){ modules=21; }
-    const start=quietPx, end=N-quietPx, size=end-start, cell=size/modules, matrix=[];
-    for(let r=0;r<modules;r++){
-      const row=[];
-      for(let c=0;c<modules;c++){
-        const sx=Math.floor(start+c*cell), sy=Math.floor(start+r*cell);
-        const sw=Math.max(1,Math.ceil(cell)), sh=Math.max(1,Math.ceil(cell));
-        const data=octx.getImageData(sx,sy,sw,sh).data;
-        let sum=0,cnt=0;
-        for(let i=0;i<data.length;i+=4){
-          sum+=0.2126*data[i]+0.7152*data[i+1]+0.0722*data[i+2]; cnt++;
-        }
-        row.push((sum/cnt)<thresh?1:0);
-      }
-      row.length && matrix.push(row);
-    }
-    return matrix;
   }
 
   function buildBricksFromMatrix(mat){
@@ -461,33 +385,32 @@
         if(mat[r][c]!==1) continue;
         const x=startX + c*moduleSize;
         const y=startY + r*moduleSize;
-        bricks.push({ id:id++, x,y, w:moduleSize, h:moduleSize, hp: 2, type:'black', cleared:false, r, c });
+        bricks.push({ id:id++, x,y, w:moduleSize, h:moduleSize, hp:2, type:'black', cleared:false, r, c });
       }
     }
     state.bricks=bricks;
     state.gridMeta={ startX,startY,moduleSize,cols,rows };
   }
 
-  // ---- จัดตำแหน่งการ์ด Game Over ให้พ้น QR ----
   function placeGameOverCard(){
-    let topY = canvas.height * 0.6;
+    let topY=canvas.height*0.6;
     if(state.gridMeta){
-      const gm = state.gridMeta;
-      const gridBottom = gm.startY + gm.rows * gm.moduleSize;
-      topY = gridBottom + 16;
-      const maxTop = canvas.height - 160;
-      topY = Math.min(topY, maxTop);
+      const gm=state.gridMeta;
+      const gridBottom=gm.startY + gm.rows*gm.moduleSize;
+      topY=gridBottom + 16;
+      const maxTop=canvas.height - 160;
+      topY=Math.min(topY, maxTop);
     }
     gameOverCard.style.top = `${Math.round(topY)}px`;
   }
 
-  // ====== วิเคราะห์ความเสียหาย & ความอ่านได้ ======
+  // ===== วิเคราะห์ความเสียหาย & ความอ่านได้ =====
   function matrixFromCurrentGrid(){
-    const gm = state.gridMeta; if(!gm) return null;
-    const rows = gm.rows, cols = gm.cols;
-    const base = state.currentMatrix ? state.currentMatrix.map(row=>row.slice()) : Array.from({length:rows},()=>Array(cols).fill(0));
-    const alive = new Set();
-    for(const br of state.bricks){ if(br.hp>0 && !br.cleared){ alive.add(br.r + ',' + br.c); } }
+    const gm=state.gridMeta; if(!gm) return null;
+    const rows=gm.rows, cols=gm.cols;
+    const base=state.currentMatrix ? state.currentMatrix.map(row=>row.slice()) : Array.from({length:rows},()=>Array(cols).fill(0));
+    const alive=new Set();
+    for(const br of state.bricks){ if(br.hp>0 && !br.cleared){ alive.add(br.r+','+br.c); } }
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
         if(base[r][c]===1 && !alive.has(r+','+c)) base[r][c]=0;
@@ -498,17 +421,15 @@
 
   function drawMatrixToCanvas(mat, modulePx=6, quiet=4){
     const rows=mat.length, cols=mat[0].length;
-    const W = (cols + quiet*2) * modulePx;
-    const H = (rows + quiet*2) * modulePx;
-    qrCanvas.width = W; qrCanvas.height = H;
-
+    const W=(cols+quiet*2)*modulePx, H=(rows+quiet*2)*modulePx;
+    qrCanvas.width=W; qrCanvas.height=H;
     qrCtx.fillStyle='#ffffff'; qrCtx.fillRect(0,0,W,H);
     qrCtx.fillStyle='#000000';
     for(let r=0;r<rows;r++){
       for(let c=0;c<cols;c++){
         if(mat[r][c]===1){
-          const x = (c+quiet)*modulePx, y = (r+quiet)*modulePx;
-          qrCtx.fillRect(x, y, modulePx, modulePx);
+          const x=(c+quiet)*modulePx, y=(r+quiet)*modulePx;
+          qrCtx.fillRect(x,y,modulePx,modulePx);
         }
       }
     }
@@ -526,13 +447,13 @@
   }
 
   function checkFinderHealth(mat){
-    const sz = 7;
-    const coords = [
+    const sz=7;
+    const coords=[
       {r0:0, c0:0, name:'Top-Left'},
       {r0:0, c0:mat[0].length - sz, name:'Top-Right'},
       {r0:mat.length - sz, c0:0, name:'Bottom-Left'},
     ];
-    const res = [];
+    const res=[];
     for(const f of coords){
       let total=0, black=0;
       for(let r=f.r0; r<f.r0+sz; r++){
@@ -546,8 +467,8 @@
   }
 
   function checkTimingHealth(matOriginal, matNow){
-    const n = matOriginal.length;
-    const line = 6; // สำหรับเวอร์ชันเล็ก
+    const n=matOriginal.length;
+    const line=6;
     function pctOnRow(){
       let need=0, left=0;
       for(let c=0;c<n;c++){
@@ -562,86 +483,75 @@
       }
       return need? Math.round(left*100/need): 100;
     }
-    return { rowPct: pctOnRow(), colPct: pctOnCol() };
+    return { rowPct:pctOnRow(), colPct:pctOnCol() };
   }
 
   function revealAnswerAndExplain(){
-    const matNow = matrixFromCurrentGrid();
-    if(!matNow){ qrResultBox.innerHTML = `<div>ไม่พบกริดสำหรับประกอบ QR</div>`; return; }
+    const matNow=matrixFromCurrentGrid();
+    if(!matNow){ qrResultBox.innerHTML=`<div>ไม่พบกริดสำหรับประกอบ QR</div>`; return; }
 
     drawMatrixToCanvas(matNow, 6, 4);
     qrPreviewBox.style.display='inline-flex';
 
-    const original = (uuidText.textContent||'').trim();
-    const pctLeft = percentBlackLeft(state.currentMatrix, matNow);
-    const finders = checkFinderHealth(matNow);
-    const timing  = checkTimingHealth(state.currentMatrix, matNow);
+    const original=(uuidText.textContent||'').trim();
+    const pctLeft=percentBlackLeft(state.currentMatrix, matNow);
+    const finders=checkFinderHealth(matNow);
+    const timing=checkTimingHealth(state.currentMatrix, matNow);
 
-    let readable = false, decoded = null;
+    let readable=false, decoded=null;
     try{
-      const imgData = qrCtx.getImageData(0,0,qrCanvas.width,qrCanvas.height);
-      const res = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-      if(res && res.data){ readable = true; decoded = res.data.trim(); }
+      const imgData=qrCtx.getImageData(0,0,qrCanvas.width,qrCanvas.height);
+      const res=jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts:"attemptBoth" });
+      if(res && res.data){ readable=true; decoded=res.data.trim(); }
     }catch(err){}
 
     qrStatusText.innerHTML = readable
-      ? `<b style="color:#a7f3d0">อ่านได้ ✅</b>`
-      : `<b style="color:#fecaca">อ่านไม่ได้ ❌</b>`;
+      ? `<b style="color:#0f766e">อ่านได้ ✅</b>`
+      : `<b style="color:#b91c1c">อ่านไม่ได้ ❌</b>`;
 
-    // สรุปผล + เทียบกับคำตอบของผู้เล่น
-    let html = `<div><b>ความเสียหาย:</b> ${pctLeft==null?'-':(100-pctLeft)}% จากโมดูลดำทั้งหมด</div>`;
-    html += `<div><b>UUID12 เดิม:</b> <code>${original||'-'}</code></div>`;
+    let html=`<div><b>ความเสียหาย:</b> ${pctLeft==null?'-':(100-pctLeft)}% จากโมดูลดำทั้งหมด</div>`;
+    html+=`<div><b>UUID12 เดิม:</b> <code>${original||'-'}</code></div>`;
 
     if(readable){
-      html += `<div><b>ผลถอดรหัส:</b> <code>${decoded}</code></div>`;
-      if(original && decoded !== original){
-        html += `<div style="color:#fde68a"><b>หมายเหตุ:</b> ข้อมูลที่ถอดได้ไม่ตรงกับต้นฉบับ</div>`;
+      html+=`<div><b>ผลถอดรหัส:</b> <code>${decoded}</code></div>`;
+      if(original && decoded!==original){
+        html+=`<div style="color:#92400e"><b>หมายเหตุ:</b> ข้อมูลที่ถอดได้ไม่ตรงกับต้นฉบับ</div>`;
       }
+    } else {
+      const issues=[];
+      for(const f of finders){ if(f.pct<70) issues.push(`Finder ${f.name} เสียหายมาก (${f.pct}%)`); }
+      if(timing.rowPct<60) issues.push(`Timing row (แถวกลาง) ขาดหาย (${timing.rowPct}%)`);
+      if(timing.colPct<60) issues.push(`Timing column (คอลัมน์กลาง) ขาดหาย (${timing.colPct}%)`);
+      if(issues.length===0){ issues.push('สัดส่วนโมดูลเสียหายสูงเกินกว่าที่ ECC ระดับ M จะชดเชยได้'); }
+      html+=`<div style="margin-top:6px;"><b>สาเหตุหลัก:</b><ul style="margin:6px 0 0 18px;">${issues.map(s=>`<li>${s}</li>`).join('')}</ul></div>`;
     }
 
-    // อธิบายส่วนที่เสียหาย ถ้าอ่านไม่ได้
-    if(!readable){
-      const issues = [];
-      for(const f of finders){ if(f.pct < 70) issues.push(`Finder ${f.name} เสียหายมาก (${f.pct}%)`); }
-      if(timing.rowPct < 60) issues.push(`Timing row (แถวที่ 6) ขาดหาย (${timing.rowPct}%)`);
-      if(timing.colPct < 60) issues.push(`Timing column (คอลัมน์ที่ 6) ขาดหาย (${timing.colPct}%)`);
-      if(issues.length===0){ issues.push('สัดส่วนโมดูลที่เสียหายโดยรวมสูงเกินกว่าที่ ECC ระดับ M จะชดเชยได้'); }
-      html += `<div style="margin-top:6px;"><b>สาเหตุหลักที่ทำให้อ่านไม่ได้:</b><ul style="margin:6px 0 0 18px;">${issues.map(s=>`<li>${s}</li>`).join('')}</ul></div>`;
-    }
+    html+=`<div style="margin-top:6px;">Finder • ${finders.map(f=>`${f.name}: ${f.pct}%`).join(' • ')}<br/>Timing • Row: ${timing.rowPct}% • Col: ${timing.colPct}%</div>`;
 
-    html += `<div style="margin-top:6px;">Finder • ${finders.map(f=>`${f.name}: ${f.pct}%`).join(' • ')}<br/>Timing • Row6: ${timing.rowPct}% • Col6: ${timing.colPct}%</div>`;
-
-    // เทียบคำตอบผู้เล่น
-    if(state.userGuess !== null){
-      const correct = (state.userGuess === readable);
-      html += `<div style="margin-top:8px; font-weight:700; ${correct?'color:#a7f3d0':'color:#fecaca'}">
+    if(state.userGuess!==null){
+      const correct=(state.userGuess===readable);
+      html+=`<div style="margin-top:8px; font-weight:700; ${correct?'color:#065f46':'color:#7f1d1d'}">
         คำตอบของคุณ: ${state.userGuess ? 'สแกนได้' : 'สแกนไม่ได้'} → ${correct ? 'ตรง ✅' : 'ไม่ตรง ❌'}
       </div>`;
     }
 
-    html += `<div style="opacity:.85; margin-top:6px; font-size:12px">หมายเหตุ: ประเมินโครงสร้าง (Finder/Timing) และทดสอบถอดจริงด้วย jsQR</div>`;
-    qrResultBox.innerHTML = html;
+    html+=`<div style="opacity:.85; margin-top:6px; font-size:12px">หมายเหตุ: ประเมิน Finder/Timing + ทดลองถอดจริงด้วย jsQR</div>`;
+    qrResultBox.innerHTML=html;
   }
 
   // ---- Interaction: เดา → เฉลย ----
   btnGuessYes.addEventListener('click', ()=>{
-    state.userGuess = true;
-    guessBox.style.display='none';
-    revealBox.style.display='block';
-    revealAnswerAndExplain();
+    state.userGuess=true; window.guessChosen=true;
+    guessBox.style.display='none'; revealBox.style.display='block'; revealAnswerAndExplain();
   });
   btnGuessNo.addEventListener('click', ()=>{
-    state.userGuess = false;
-    guessBox.style.display='none';
-    revealBox.style.display='block';
-    revealAnswerAndExplain();
+    state.userGuess=false; window.guessChosen=true;
+    guessBox.style.display='none'; revealBox.style.display='block'; revealAnswerAndExplain();
   });
-
-  // ---- overlay restart ----
   btnRestart.addEventListener('click', ()=>{ newRound(true); });
 
   // ---- init ----
-  hiscoreEl.textContent = getHiScore();
+  hiscoreEl.textContent=getHiScore();
   newRound(true);
   requestAnimationFrame(step);
 
@@ -649,10 +559,110 @@
   document.getElementById('backBtn').addEventListener('click', function(e){
     e.preventDefault();
     try{
-      if(document.referrer && new URL(document.referrer).origin === location.origin){ history.back(); }
-      else { location.href = 'index.html'; }
+      if(document.referrer && new URL(document.referrer).origin===location.origin){ history.back(); }
+      else { location.href='index.html'; }
     }catch(err){ history.back(); }
   });
+  </script>
+
+  <!-- ===== Web Bluetooth glue (ตรงกับ main.py) ===== -->
+  <script>
+    // ต้องตรงกับ ESP32 main.py
+    const SERVICE_UUID = '12345678-1234-1234-1234-1234567890ab';
+    const CHAR_UUID    = 'abcd1234-1234-1234-1234-abcdef012345';
+
+    window.bleDir = 0;          // -1 ซ้าย, 0 เฉยๆ, 1 ขวา
+    let bleDevice=null, bleCharacteristic=null;
+    let lastMaskFromBle=0, lastGuessMs=0;
+
+    function setBleStatus(text){
+      const el=document.getElementById('bleStatus');
+      if(el) el.innerHTML='BLE: <b>'+text+'</b>';
+      console.log('[BLE]', text);
+    }
+
+    // ตอนนี้ ESP32 ส่ง bit=1 เมื่อ “กด” (active-low ในฮาร์ดแวร์ แต่ถูก map เป็น 1 บน mask แล้ว)
+    function parseButtons(v){
+      const leftPressed  = (v & 0x01) !== 0;   // 1 = กดซ้าย
+      const rightPressed = (v & 0x02) !== 0;   // 1 = กดขวา
+      const bothPressed  = (v & 0x03) === 0x03;
+      return { leftPressed, rightPressed, bothPressed };
+    }
+
+    function onBleButtonsChanged(ev){
+      const v = ev.target.value.getUint8(0);
+      const {leftPressed, rightPressed, bothPressed} = parseButtons(v);
+
+      const inGameOver = state.showGameOver && (
+        document.getElementById('guessBox').style.display !== 'none' ||
+        document.getElementById('revealBox').style.display !== 'none'
+      );
+
+      // โหมด Game Over: สองจังหวะ (เลือกเดา -> กดสองปุ่มพร้อมกันเพื่อเริ่มใหม่)
+      if(inGameOver){
+        if(!window.guessChosen){
+          const now=Date.now();
+          if(leftPressed && !(lastMaskFromBle & 0x01) && guessBox.style.display!=='none' && (now-lastGuessMs>150)){
+            btnGuessYes.click(); lastGuessMs=now;
+          }
+          if(rightPressed && !(lastMaskFromBle & 0x02) && guessBox.style.display!=='none' && (now-lastGuessMs>150)){
+            btnGuessNo.click(); lastGuessMs=now;
+          }
+        }else{
+          const wasBoth = (lastMaskFromBle & 0x03) === 0x03;
+          if(bothPressed && !wasBoth) btnRestart.click();
+        }
+        lastMaskFromBle=v; window.bleDir=0; return;
+      }
+
+      // โหมดเล่นปกติ
+      window.bleDir = (leftPressed && !rightPressed) ? -1 :
+                      (rightPressed && !leftPressed) ?  1 : 0;
+
+      // ปล่อยลูก: กดสองปุ่มพร้อมกัน (เฉพาะยังไม่เริ่ม)
+      const wasBoth=(lastMaskFromBle & 0x03) === 0x03;
+      if(bothPressed && !wasBoth && !state.running && !state.showGameOver){ launch(); }
+
+      lastMaskFromBle=v;
+    }
+
+    async function connectBle(){
+      try{
+        if(!('bluetooth' in navigator)){ alert('เบราว์เซอร์นี้ไม่รองรับ Web Bluetooth'); return; }
+        if(!window.isSecureContext && !['localhost','127.0.0.1'].includes(location.hostname)){
+          alert('ต้องเปิดผ่าน HTTPS หรือ http://localhost/127.0.0.1 เท่านั้น'); return;
+        }
+
+        setBleStatus('pairing…');
+
+        // ใช้ filters ลดโอกาสเลือกผิดตัว (ต้องโฆษณา service UUID และตั้งชื่อ QR-Paddle)
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { services: [SERVICE_UUID] },
+            { namePrefix: 'QR-Paddle' }
+          ],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', ()=>{
+          setBleStatus('disconnected');
+        });
+
+        const server  = await bleDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        bleCharacteristic = await service.getCharacteristic(CHAR_UUID);
+
+        await bleCharacteristic.startNotifications();
+        bleCharacteristic.addEventListener('characteristicvaluechanged', onBleButtonsChanged);
+
+        setBleStatus('connected');
+      }catch(err){
+        console.error('[BLE] connect error:', err);
+        setBleStatus('error'); setTimeout(()=>setBleStatus('disconnected'), 1200);
+      }
+    }
+
+    document.getElementById('bleConnectBtn')?.addEventListener('click', connectBle);
   </script>
 </body>
 </html>
