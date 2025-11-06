@@ -5,7 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Q-ARE-Code breaker? • UUID12 QR (Mobile)</title>
   <style>
-    :root{ --bg:#e5e7eb; --fg:#0b0f14; --card:#f9fafb; --bd:rgba(0,0,0,.08); --blue:#2563eb; color-scheme: light; }
+     /* ค่าเริ่มต้น ตอน "เดาดูก่อนสิ!" */
+#overlay .card {
+  padding: 20px 18px 200px;
+}
+
+/* ตอนเฉลย (มี QR แสดงผล) */
+#overlay .card.reveal-mode {
+  padding: 24px 18px 20px; /* ล่างมากกว่า */
+}
+
+    :root{ 
+  --bg:#e5e7eb; 
+  --fg:#0b0f14; 
+  --card:#f9fafb; 
+  --bd:rgba(0,0,0,.08); 
+  --blue:#2563eb; 
+  --red:#ef4444; /* ✅ เพิ่มบรรทัดนี้ */
+  --orange:#f97316;
+  --green:#22c55e;
+  --purple:#8b5cf6;
+  --yellow:#eab308;
+  color-scheme: light; 
+}
+
     html, body{
       height:100%; margin:0; background:var(--bg) !important; color:var(--fg) !important;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
@@ -28,13 +51,42 @@
     .back-fixed svg{ opacity:.9 }
     #overlay{ position:absolute; inset:0; display:none; pointer-events:none; }
     #overlay.show{ display:block; }
-    #overlay .card{
-      position:absolute; left:50%; transform:translateX(-50%);
-      background:rgba(0,0,0,0.5); color:#fff; padding:16px 18px; border-radius:14px; text-align:center;
-      min-width:260px; pointer-events:auto;
-    }
-    .btn{ display:inline-block; margin-top:10px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer; }
-    .btn-ghost{ display:inline-block; margin-top:10px; background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:10px; font-weight:700; padding:10px 16px; cursor:pointer; }
+   #overlay .card{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  top:60%; /* ใช้ค่าที่ต้องการ */
+  background:rgba(255, 255, 255);
+  color:#000000;
+  padding:20px 18px 140px; /* ✅ ขยาย padding ด้านล่างให้ยาวขึ้น */
+  border-radius:14px;
+  text-align:center;
+  min-width:260px;
+  pointer-events:auto;
+}
+    .btn{ 
+  display:inline-block; 
+  margin-top:10px; 
+  background:var(--blue); 
+  color:#fff; 
+  border:none; 
+  border-radius:10px; 
+  font-weight:700; 
+  padding:10px 16px; 
+  cursor:pointer; 
+}
+
+.btn-ghost{ 
+  display:inline-block; 
+  margin-top:10px; 
+  background:var(--red); 
+  color:#ffffff; 
+  border:none; 
+  border-radius:10px; 
+  font-weight:700; 
+  padding:10px 16px; 
+  cursor:pointer; 
+}
     .stage{ position:relative; display:inline-block; }
     #qrPreview{ margin-top:10px; background:#fff; padding:8px; border-radius:10px; display:none; align-items:center; gap:8px; }
     #qrPreview canvas{ width:96px; height:96px; image-rendering: pixelated; border:1px solid rgba(255,255,255,.35); border-radius:6px; }
@@ -388,16 +440,21 @@
   }
 
   function placeGameOverCard(){
-    let topY=canvas.height*0.6;
-    if(state.gridMeta){
-      const gm=state.gridMeta;
-      const gridBottom=gm.startY + gm.rows*gm.moduleSize;
-      topY=gridBottom + 16;
-      const maxTop=canvas.height - 160;
-      topY=Math.min(topY, maxTop);
-    }
-    gameOverCard.style.top = `${Math.round(topY)}px`;
+  let topY=canvas.height*0.6;
+  if(state.gridMeta){
+    const gm=state.gridMeta;
+    const gridBottom=gm.startY + gm.rows*gm.moduleSize;
+    topY=gridBottom + 16;
+    const maxTop=canvas.height - 160;
+    topY=Math.min(topY, maxTop);
   }
+
+  // ✅ เพิ่มบรรทัดนี้เพื่อลดตำแหน่งลง
+  topY -= 315;  // ปรับค่าได้ตามต้องการ เช่น 50 หรือ 100
+
+  gameOverCard.style.top = `${Math.round(topY)}px`;
+}
+
 
   // ===== วิเคราะห์ความเสียหาย & ความอ่านได้ =====
   function matrixFromCurrentGrid(){
@@ -536,13 +593,23 @@
 
   // ---- Interaction: เดา → เฉลย ----
   btnGuessYes.addEventListener('click', ()=>{
-    state.userGuess=true; window.guessChosen=true;
-    guessBox.style.display='none'; revealBox.style.display='block'; revealAnswerAndExplain();
-  });
-  btnGuessNo.addEventListener('click', ()=>{
-    state.userGuess=false; window.guessChosen=true;
-    guessBox.style.display='none'; revealBox.style.display='block'; revealAnswerAndExplain();
-  });
+  state.userGuess = true;
+  window.guessChosen = true;
+  guessBox.style.display = 'none';
+  revealBox.style.display = 'block';
+  gameOverCard.classList.add('reveal-mode'); // ✅ เพิ่มคลาสเมื่อเฉลย
+  revealAnswerAndExplain();
+});
+
+btnGuessNo.addEventListener('click', ()=>{
+  state.userGuess = false;
+  window.guessChosen = true;
+  guessBox.style.display = 'none';
+  revealBox.style.display = 'block';
+  gameOverCard.classList.add('reveal-mode'); // ✅ เพิ่มคลาสเมื่อเฉลย
+  revealAnswerAndExplain();
+});
+
   btnRestart.addEventListener('click', ()=>{ newRound(true); });
 
   // ---- init ----
