@@ -300,8 +300,8 @@
     }
     updateHud();
 
-    // อินพุตจาก BLE
-    if (window.bleDir !== 0) movePaddle(window.bleDir);
+    // ===== ✅ ใช้การขยับแบบอิงเวลาเฉพาะสัญญาณจากจอย BLE =====
+    movePaddleDigital(window.bleDir || 0, dt);
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -361,6 +361,15 @@
     else if(typeof dirOrX==='number'){ p.x=dirOrX; }
     p.x=Math.max(p.w/2, Math.min(canvas.width-p.w/2, p.x));
   }
+
+  // ✅ ใหม่: ขยับจากสัญญาณจอย BLE แบบอิงเวลา
+  function movePaddleDigital(dir, dt){
+    const p=state.paddle;
+    const MAX_SPEED_PX_PER_SEC = 260; // ปรับความเร็วสูงสุดต่อวินาทีได้ตรงนี้
+    p.x += (dir||0) * MAX_SPEED_PX_PER_SEC * dt;
+    p.x = Math.max(p.w/2, Math.min(canvas.width - p.w/2, p.x));
+  }
+
   function launch(){ if(state.running || state.showGameOver) return; state.running=true; resetBall(false); }
 
   addEventListener('keydown', e=>{
@@ -677,7 +686,7 @@ btnGuessNo.addEventListener('click', ()=>{
         lastMaskFromBle=v; window.bleDir=0; return;
       }
 
-      // โหมดเล่นปกติ
+      // โหมดเล่นปกติ: เก็บทิศ (-1,0,1) ให้ลูปเกมไปขยับตาม dt
       window.bleDir = (leftPressed && !rightPressed) ? -1 :
                       (rightPressed && !leftPressed) ?  1 : 0;
 
